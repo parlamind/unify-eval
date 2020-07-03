@@ -161,6 +161,34 @@ For instance, a wrapper around a keras classifier might include these lines:
 `from_components(cls, **kwargs)` takes those components and re-creates the model from its parts by passing them as
 keyword arguments to the respective constructor.
 
+### The .model file
+
+![alt text](readme_images/model_file.png)
+
+- Every model is saved in a .model file
+
+- Really just a gzipped tar archive containing
+
+ - metadata.json
+
+    - module name of saved deep model
+
+    - class name of saved model
+ ```json
+ {
+    "module": "deep_learning.model.transformer_clf",
+    "cls": "TransformerModel"
+ }
+ ```
+
+ - folders for all backends that the model uses
+
+    - contain backend-specific serialization formats
+
+![alt text](readme_images/model_serialization.png)
+
+# Model classes
+
 ### DeepModelBase
 - Abstract base class for objects that either do not have optimizable parameters (preprocessing layers etc)
  or do have them, but the loss is still undefined (e.g. a single layer in a bigger model)
@@ -316,6 +344,143 @@ trainer = Trainer(
     ])
 ```
 
+### Bayesian hyper-parameter optimization
+The `OptimizableTrainer` class offers a way to optimize hyper-parameters of a model and its training procedure
+via Gaussian Processeses as implemented in `sciki-optimize`.
+
+Let's take a simple MLP model as an example. We first split our data in train, validation and test set. Then,
+we write a model factory that maps a given hyper-parameter setting to the respective model:
+
+```python
+MODEL_FOLDER = "/tmp/unify_eval/optimize_mlp"
+
+# generate some toy data
+X, Y = make_moons(n_samples=200)
+
+# split data set into train, validation and test set
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.1)
+X_train_hyperopt, X_validate, Y_train_hyperopt, Y_validate = train_test_split(X_train, Y_train, test_size=.1)
+
+
+# write some factory that maps hyper parameters to an actual model
+# the label mapper object is a constant, so we can include it via a closure
+def create_model_factory(label_mapper: LabelMapper):
+    def initiate_model(hidden_size: int, activation: str, dropout_rate: float, **kwargs) -> Classifier:
+        activation = dict(elu=t.nn.functional.elu,
+                          relu=t.nn.functional.relu,
+                          sigmoid=t.nn.functional.sigmoid,
+                          tanh=t.nn.functional.tanh)[activation]
+
+        # pytorch module
+        module = MLPClassifierModule(layer_sizes=[2, hidden_size, 2],
+                                     activation=activation,
+                                     dropout_rate=dropout_rate)
+
+        # actual model wrapping around pytorch module
+        return MLPModel(mlp_classifier_module=module,
+                        label_mapper=label_mapper)
+
+    return initiate_model
+
+```
+We then have to set up the actual training procedure. The `OptimizableTrainer` class sub-classes both `Trainer` and  `DeepModel`,
+with the latter following the idea that hyper-parameters can be thought of as parameters of the actual training procedure, i.e.
+the trainer object itself. We initialize the trainer with two lists of hyper-parameters, one that is passed to the
+respective model constructor before training, and another list that contains hyper-parameters that are passed at every training step.
+Moroever, we pass a default list of hyper-parameter values that are used as starting point before the optimization begins.
+
+```python
+# initiate label mapper and model factory
+label_mapper = LabelMapper(Y=Y_train)
+
+initiate_model = create_model_factory(label_mapper)
+
+# optimize the hyper-parameters
+optimizable_trainer = OptimizableTrainer(
+    # train on subset of training set
+    data_loader=KeyedBatchLoader(input_data=X_train_hyperopt,
+                                 labels=Y_train_hyperopt),
+    # list of minibatch callbacks
+    minibatch_callbacks=[
+        CheckNaN()
+    ],
+    # list of full bach callbacks
+    batch_callbacks=[
+        # plot evaluation on hyper-optimization training set
+        EvaluationCallBack.default(folder_path=MODEL_FOLDER,
+                                   relative_path=os.path.join("evaluation_data", "train_hyperopt"),
+                                   data_loader=KeyedBatchLoader(input_data=X_train_hyperopt,
+                                                                labels=Y_train_hyperopt),
+                                   label_indices=label_mapper.all_indices,
+                                   minibatch_size=32),
+        # plot evaluation on validation set
+        EvaluationCallBack.default(folder_path=MODEL_FOLDER,
+                                   relative_path=os.path.join("evaluation_data", "validate"),
+                                   data_loader=KeyedBatchLoader(input_data=X_validate,
+                                                                labels=Y_validate),
+                                   label_indices=label_mapper.all_indices,
+                                   minibatch_size=32),
+    ],
+    # define hyper-parameters to optimize that are passed to model constructor
+    hyper_params_initialization=[
+        Integer(low=2, high=32, prior="log_uniform", name="hidden_size"),
+        Categorical(categories=["elu", "relu", "sigmoid", "tanh"], name="activation"),
+        Real(low=0, high=.9, name="dropout_rate")
+    ],
+    # define hyper-parameters to optimize that are passed to model during training
+    hyper_params_training=[],
+    # pass model factory
+    initiate_model=initiate_model,
+    # pass function that evaluates current hyper-parameter  configuration
+    evaluate_model=CheckAccuracy(data_loader=KeyedBatchLoader(input_data=X_validate,
+                                                              labels=Y_validate)),
+    # pass initial hyper-parameter configuration
+    initial_hyper_params=[2, "elu", .1])
+```
+Once everything is defined, we can start optimizing the trainer! We train it as every other model by calling the `train()`
+method. For instance, we can use *probability of improvement* as acquisition function and check 20 different settings:
+
+```python
+# optimize hyper-parameters
+optimizable_trainer = optimizable_trainer.train(acquisition_function="PI",
+                                                n_hyperparam_iterations=20,
+                                                n_iterations=100,
+                                                minibatch_size=32,
+                                                label_kw="labels")
+```
+Once that search has finished, we take our entire training set as well as the test set and pass it to another trainer object.
+We initialize the model with the hyper-parameters that we have found and let it be optimized by the trainer object to yield
+our final model:
+
+```python
+# define trainer for final model with true training and test data
+trainer = Trainer(data_loader=KeyedBatchLoader(input_data=X_train,
+                                               labels=Y_train),
+                  minibatch_callbacks=optimizable_trainer.minibatch_callbacks,
+                  batch_callbacks=[
+                      EvaluationCallBack.default(folder_path=MODEL_FOLDER,
+                                                 relative_path=os.path.join("evaluation_data", "train"),
+                                                 data_loader=KeyedBatchLoader(input_data=X_train,
+                                                                              labels=Y_train),
+                                                 label_indices=label_mapper.all_indices,
+                                                 minibatch_size=32),
+                      EvaluationCallBack.default(folder_path=MODEL_FOLDER,
+                                                 relative_path=os.path.join("evaluation_data", "test"),
+                                                 data_loader=KeyedBatchLoader(input_data=X_test,
+                                                                              labels=Y_test),
+                                                 label_indices=label_mapper.all_indices,
+                                                 minibatch_size=32)]
+                  )
+# train model on optmized hyper-parameter setting
+final_model = trainer.train_model(model=initiate_model(*optimizable_trainer.current_hyper_params),
+                    n_iterations=100,
+                    minibatch_size=32)
+
+```
+We finally can switch to tensorboard to inspect the single runs:
+![alt text](readme_images/hyperopt_tensorboard.png)
+
+
 # Data-related classes
 
 ## DataLoader
@@ -349,33 +514,6 @@ evaluated data lazily, i.e. only loads data once it its needed. Useful for infin
 - Same as KeyedBatchLoader, but lazy.
 
 - For bigger / infinitely big data sets.
-
-# The .model file
-
-![alt text](readme_images/model_file.png)
-
-- Every model is saved in a .model file
-
-- Really just a gzipped tar archive containing
-
- - metadata.json
-
-    - module name of saved deep model
-
-    - class name of saved model
- ```json
- {
-    "module": "deep_learning.model.transformer_clf",
-    "cls": "TransformerModel"
- }
- ```
-
- - folders for all backends that the model uses
-
-    - contain backend-specific serialization formats
-
-![alt text](readme_images/model_serialization.png)
-
 
 # Running the evaluation
 - run the evaluation via evaluate.py at the root of the project
