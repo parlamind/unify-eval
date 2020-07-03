@@ -62,13 +62,13 @@ for model, data_loader in [(model_0, data_loader_0),
                           (model_1, data_loader_1)]:
     trainer = Trainer(
         data_loader=data_loader,
-        # list of minibatch callbacks
+        # list of mini-batch callbacks
         minibatch_callbacks=[
         ],
-        # list of full bach callbacks
+        # list of full batch callbacks
         batch_callbacks=[
         ])
-    # the trainer recieves the data from the data_loader and passes it to the model
+    # the trainer receives the data from the data_loader and passes it to the model
     trainer.train_model(model=model, n_iterations=10)
 
 ```
