@@ -194,7 +194,7 @@ keyword arguments to the respective constructor.
  or do have them, but the loss is still undefined (e.g. a single layer in a bigger model)
 
 - Automatic saving and loading of models is currently implemented for fastai rnn learners,
-keras, pytorch and other models that can be serialized via joblib.
+keras, pytorch, subclasses of DeepModel and objects that can be serialized via joblib.
 
 - Contains abstract methods to train, save and (de)construct models from (into) their single components.
 
@@ -218,7 +218,6 @@ keras, pytorch and other models that can be serialized via joblib.
 
 - single method to embed data.
 
-
 ## StatefulModel(DeepModelBase)
 - ABC for models that are explicitly stateful, e.g recurrent models such as LSTMs.
 
@@ -229,6 +228,15 @@ but assumes it can be passed to the model as a single object
 
 - Expects method implementations for getting / setting the current state as well as getting a default state (i.e. initial state).
  Implements model reset as `self.set_state(self.get_default_state())`, which can be overwritten
+
+## Sequence2SequenceModel(StatefulModel)
+- Class for modeling stateful sequence-to-sequence models
+- Comes with implemented methods for calculating cross-entropy and perplexity
+
+## LanguageModel(Sequence2SequenceModel)
+- Class for language models
+- Contains pre-defined methods to generate text
+
 
 
 ## Layer API
