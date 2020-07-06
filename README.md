@@ -559,7 +559,7 @@ subject_lines = np.array(subject_lines)
 message_bodies = np.array(message_bodies)
 sentiment = np.array(sentiment)
 
-# initiate data loder
+# initiate data loader
 data_loader = KeyedBatchLoader(subject_lines=subject_lines,
                                message_bodies=message_bodies,
                                sentiment=sentiment)
