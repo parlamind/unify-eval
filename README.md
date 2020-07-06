@@ -631,12 +631,10 @@ model corpus that does not fit into memory but as such does not change as traini
 ![alt text](readme_images/evaluation_folder.png)
 
 
-# Tensorboard
-There are currently several callbacks that store statistics that can be read via tensorboard.
-To boot up tensorboard, make sure you have installed tensorflow in your virtual environment
-(should be the case if you have install all dependencies of the project).
-
-Then simply run tensorboard via
+# Running the Tensorboard visualization
+There are currently several callbacks that store statistics that can be read via tensorboard. 
+The logs are stored in the model folder that are passed to those callbacks and can be read as any other
+tensorboard data via the command line:
 `tensorboard --logdir=path/to/your/model/folder`
 
 
