@@ -520,36 +520,108 @@ We finally can switch to tensorboard to inspect the single runs:
 # Data-related classes
 
 ## DataLoader
-Classes that lazily yield mini-batches of data
+`DataLoader` instances provide models access to the actual data.
+They can yield mini-batches over the training data, sample subsets of bigger corpora 
+or might even yield a lazy view on an infinitely long language model corpus 
+that is being actively augmented by incoming data. 
 
 
-## EagerDataLoader(DataLoader)
-evaluated data eagerly, i.e. has all the data in memory all the time. Useful to plot progress bars during training as you need the total number of mini-batches per full iteration
+### EagerDataLoader(DataLoader)
 
+Abstract base class for eager data, i.e. for cases where is possible to have all the data in memory 
+all the time. Useful to plot progress bars during training as you need the total number 
+of mini-batches per full iteration.
 
-## LazyDataLoader(DataLoader)
-evaluated data lazily, i.e. only loads data once it its needed. Useful for infinitely big data sets (online training, fetching data for language models via a crawler, …)
+### LazyDataLoader(DataLoader)
+Abstract base class for lazily-evaluated data, i.e. it only loads data once that data is actually needed. 
+Useful for infinitely big data sets (e.g. online training, fetching data for language models via a crawler, …).
 
+### KeyedBatchLoader(EagerDataLoader)
+The default data loader class to work with smaller data sets that entirely fit into memory. 
+Its instances take single data arrays as keyword arguments and yield mini-batches that consist of dictionaries 
+that map data names to their respective data values.
 
-## KeyedBatchLoader(EagerDataLoader)
-- Takes single data arrays as keyword arguments and yields mini-batches as dictionary, mapping from data name to data values.
-- Should be used as a default, since the DeepModel API expects data as keyword arguments, too.
+Here it is important that the keywords fit to the keywords a given model expects. As an example,
+we can have a sentiment classifier that maps an email subject line and message body to a sentiment value in [0,1].
+The corresponding `KeyedBatchLoader` instance would take the respective data names as keyword arguments that
+map to the respective values:
+```python
 
-![alt text](readme_images/batch_loader.png)
+# some toy data
+subject_lines = ["Where is my package",
+                 "When does my package finally arrive",
+                 "Where the heck is my package"]
+message_bodies = ["Hello, I have not recieved my package yet",
+                  "How long do I have to wait until my package finally arrives?",
+                  "CAN YOU FINALLY SENT ME MY PACKAGE?!!!"]
+sentiment = [.7, .3, .1]
 
+# map everything to numpy arrays
+subject_lines = np.array(subject_lines)
+message_bodies = np.array(message_bodies)
+sentiment = np.array(sentiment)
 
-## KeyedSubsampledBatchLoader(EagerDataLoader)
-- Same as KeyedBatchLoader, but only yields mini-batches over a subsample of the full data set.
+# initiate data loder
+data_loader = KeyedBatchLoader(subject_lines=subject_lines,
+                               message_bodies=message_bodies,
+                               sentiment=sentiment)
+```
+The data loader than yields minibatches that are dictionaries mapping from the data name to its values:
 
-- That subsample is resampled for every iteration
+```python
+for i_mimibatch, minibatch in enumerate(data_loader.yield_minibatches(minibatch_size=2,
+                                                                      progress_bar=False)):
+    print(f"mini-batch {i_mimibatch}")
+    for data_name, data_values in minibatch.items():
+        print(f"data name: {data_name}")
+        print(f"data values:\n{data_values}")
+    print("#"*20)
 
-- Used to yield subset of training set to approximate loss on whole training data during evaluation (otherwise would take ages)
+```
+which yields these minibatches:
+```
+mini-batch 0
+data name: subject_lines
+data values:
+['Where is my package' 'When does my package finally arrive']
+data name: message_bodies
+data values:
+['Hello, I have not recieved my package yet'
+ 'How long do I have to wait until my package finally arrives?']
+data name: sentiment
+data values:
+[0.7 0.3]
+####################
+mini-batch 1
+data name: subject_lines
+data values:
+['Where the heck is my package']
+data name: message_bodies
+data values:
+['CAN YOU FINALLY SENT ME MY PACKAGE?!!!']
+data name: sentiment
+data values:
+[0.1]
+####################
+```
+Note that the last minibatch has n_data % minibatch_size and is not cut off per default.
 
+### KeyedSubsampledBatchLoader(EagerDataLoader)
+Mostly the same as KeyedBatchLoader, instances of this class yield mini-batches 
+over a subsample of the full data set. Such subsamples are re-sampled after every full iteration.
+It should mainly be used to yield a subset of the training set to approximate an 
+evaluation metric that otherwise would need the entire training set.
+Note however that everything is still evaluated eagerly, as the entire data set is still kept in memory.
 
-## KeyedLazyDataLoader(LazyDataLoader)
-- Same as KeyedBatchLoader, but lazy.
+### KeyedLazyDataLoader(LazyDataLoader)
+Same as `KeyedBatchLoader`, but everything is evaluated lazily. 
+Useful for bigger / infinitely big data sets that do not fit into memory. 
+For instance, we can have a model that is trained online, i.e. receives new data points from an outside source.
+ 
 
-- For bigger / infinitely big data sets.
+### FiniteKeyedLazyDataLoader(KeyedLazyDataLoader)
+Subclass of `KeyedLazyDataLoader` that can be used to cycle through big but finite data sets, e.g. a language 
+model corpus that does not fit into memory but as such does not change as training progresses.
 
 # Running the evaluation
 - run the evaluation via evaluate.py at the root of the project
