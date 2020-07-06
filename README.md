@@ -385,7 +385,9 @@ The `OptimizableTrainer` class offers a way to optimize hyper-parameters of a mo
 via Gaussian Processeses as implemented in `sciki-optimize`.
 
 Let's take a simple MLP model as an example. We first split our data in train, validation and test set. Then,
-we write a model factory that maps a given hyper-parameter setting to the respective model:
+we write a model factory that maps a given hyper-parameter setting to the respective model. In our case,
+the hyper-parameters we want to optimize are the number of hidden units, the activation function and the
+dropout rate during training:
 
 ```python
 MODEL_FOLDER = "/tmp/unify_eval/optimize_mlp"
