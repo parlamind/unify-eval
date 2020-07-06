@@ -265,23 +265,40 @@ StatefulLayeredModel also implements an `unroll()` method that input subsequence
 pipeline to allow for truncated back-propagation through time.
 
 
-# Trainer
+## Trainer
 
-- Trains model on data and returns it
-
- - Expects model to train
-
- - Named training data (as the model would expect it)
-
- - List of callbacks to be called after every mini-batch
-
- - List of callbacks to be called after every full iteration
-
- - Number of iterations to train
-
- - Mini-batch size during training
+While every DeepModel instance implements a `def train(self, **kwargs) -> "DeepModel"` method that
+performs a single optimization step on a given data set, the overall training procedure usually contains
+more than that - you usually split the training data into separate mini-batches, anneal certain hyper-parameters 
+or send model statistics to some visualization tool. Instances of the 
+`Trainer` class and its subclasses aim to automate those steps. 
 
 
+### Data Loader
+
+Every `Trainer` object expects a `KeyedBatchLoader` instance yielding the training data that is passed to the model
+during the course of the optimization procedure. Here we have to make sure that the names given to the single data types
+fit to what the model itself expects. For instance, if we have text classifier that expects `clauses` as text input 
+and `labels` as target values, we assign these names to the data loader as well:
+
+```python
+# X_train and Y_train are numpy arrays
+data_loader = KeyedBatchLoader(clauses=X_train, labels=Y_train)
+```
+
+### Trainer callbacks
+Once a single mini-batch is passed to the model inside of a `Trainier` instance, a list of `TrainerCallback` instances is called. 
+They implement a `def __call__(...) -> DeepModel:
+` method that takes the current model, interacts with it and finally returns it. For instance, we can add an
+instance of the `CheckNaN` class to that list of callbacks to make sure the model is numerically stable. 
+
+After a full iteration over the training data, another list of `TrainerCallback` instances is called. 
+For example, we can evaluate the model on a test set via an `EvaluationCallBack` object or pass it to
+a `ModelSaverCallback` instance that serializes the last _n_ model states 
+and discards the previous ones.
+
+
+As an example, a trainer without any callbacks would simple train a model and return it:
 ```python
 trainer = Trainer(
     data_loader=KeyedBatchLoader(
@@ -298,7 +315,8 @@ trainer = Trainer(
 ```
 
 
-We can add various callbacks to it:
+With various callbacks added, we can log the training procedure, plot data embeddings and save the respective 
+model states after every full iterations over the data:
 
 ```python
 trainer = Trainer(
@@ -314,7 +332,7 @@ trainer = Trainer(
     ],
     # list of full bach callbacks
     batch_callbacks=[
-        # run evaluation on subsampled training data (for bigger training sets that might take ages)
+        # run evaluation on subsampled training data (for bigger training sets a full sweep might take some time)
         EvaluationCallBack.default(folder_path=os.path.join(MODEL_FOLDER, "evaluation_data", "train"),
                                    data_loader=KeyedSubsampledBatchLoader(n_subsampled=1024,
                                                                           clauses=X_train,
@@ -342,6 +360,24 @@ trainer = Trainer(
                 model_name=MODEL_NAME,
                 queue_size=2))
     ])
+```
+
+### Training a model
+Once we have defined the optimization procedure via callbacks, we can finally start the training.
+Every trainer implements the `def train_model(...) -> DeepModel` method that trains a given model for a 
+specified number of iterations on the training set and returns the optimized model. 
+
+For example,  we have a model that we want to train for 50 iterations, with a mini-batch size of 64. 
+Moreover, we pass two model-specific hyper-parameter values (maximum input length and available label indices)
+as keyword arguments:
+
+```python
+# start the training
+trained_model = trainer.train_model(model=model,
+                                    n_iterations=50,
+                                    minibatch_size=64,
+                                    max_length=150,
+                                    classes=corpus.label_mapper.all_indices)
 ```
 
 ### Bayesian hyper-parameter optimization
