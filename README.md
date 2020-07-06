@@ -165,31 +165,39 @@ keyword arguments to the respective constructor.
 
 ![alt text](readme_images/model_file.png)
 
-- Every model is saved in a .model file
+Every model is saved in a .model file, which in fact is just a renamed gzipped tar archive. Every such archive
+consists of two parts - a description of how to load the class and the single components of the model.
 
-- Really just a gzipped tar archive containing
+#### metadata.json
+This file stores information that is necessary to load the class of the serialized model. For instance, 
+an instance of a class with the namespace **unify_eval.model.transformer_clf.TransformerModel** would yield
+the following metadata file:
 
- - metadata.json
-
-    - module name of saved deep model
-
-    - class name of saved model
  ```json
  {
-    "module": "deep_learning.model.transformer_clf",
+    "module": "unify_eval.model.transformer_clf",
     "cls": "TransformerModel"
  }
  ```
+#### Serialized Components
+For every backend that is used among the single components of a model, a respective folder is created
+that contains the serialized components of that specific backend. As we can end up with components that are themselves 
+instances of subclasses of `DeepModel`, there might also be a folder containing `*.model` files! 
 
- - folders for all backends that the model uses
+## Model Serialization Cycle
 
-    - contain backend-specific serialization formats
+Once a model has been trained, we would like to serialize it, e.g. to use it in a production environment.
+As every model defines its single components, we can use those to serialize the current states of the model.
+The serialization protocols for most component backends are already implemented, so there is no further work
+to be done by the developer.
+
+The entire serialization cycle looks as follows:
 
 ![alt text](readme_images/model_serialization.png)
 
 # Model classes
 
-### DeepModelBase
+### unify_eval.model.deep_model.DeepModelBase
 - Abstract base class for objects that either do not have optimizable parameters (preprocessing layers etc)
  or do have them, but the loss is still undefined (e.g. a single layer in a bigger model)
 
@@ -199,12 +207,10 @@ keras, pytorch, subclasses of DeepModel and objects that can be serialized via j
 - Contains abstract methods to train, save and (de)construct models from (into) their single components.
 
 
-### DeepModel
+### unify_eval.model.deep_model.DeepModel(DeepModelBase)
 - Abstract base class for optimizable end-to-end deep models with defined loss function.
 
-
-
-## Classifier(DeepModel)
+### unify_eval.model.mixins.classification.Classifier(DeepModel)
 - ABC for simple classifiers
 
 - methods to yield label probabilities and labels
@@ -213,12 +219,12 @@ keras, pytorch, subclasses of DeepModel and objects that can be serialized via j
  Can be overwritten, though.
 
 
-## EmbeddingModel(DeepModel)
+### unify_eval.model.mixins.embedding.EmbeddingModel(DeepModel)
 - ABC for embedding models
 
 - single method to embed data.
 
-## StatefulModel(DeepModelBase)
+### unify_eval.model.mixins.stateful.StatefulModel(DeepModelBase)
 - ABC for models that are explicitly stateful, e.g recurrent models such as LSTMs.
 
 - Does not assume any prior specification of how model state is implemented or stored,
@@ -229,11 +235,11 @@ but assumes it can be passed to the model as a single object
 - Expects method implementations for getting / setting the current state as well as getting a default state (i.e. initial state).
  Implements model reset as `self.set_state(self.get_default_state())`, which can be overwritten
 
-## Sequence2SequenceModel(StatefulModel)
+### unify_eval.model.mixins.sequences.seq2seq.Sequence2SequenceModel(StatefulModel)
 - Class for modeling stateful sequence-to-sequence models
 - Comes with implemented methods for calculating cross-entropy and perplexity
 
-## LanguageModel(Sequence2SequenceModel)
+### unify_eval.model.mixins.sequences.language_models.LanguageModel(Sequence2SequenceModel)
 - Class for language models
 - Contains pre-defined methods to generate text
 
@@ -644,6 +650,72 @@ There are currently several callbacks that store statistics that can be read via
 The logs are stored in the model folder that are passed to those callbacks and can be read as any other
 tensorboard data via the command line:
 `tensorboard --logdir=path/to/your/model/folder`
+
+For instance, let's imagine we want to train an (addmitedly *very* simple) LSTM on some language model corpus and then
+take it as an encoder for a text classifier. We are interested in
+how the performance of the resulting text classifier improves as we train the language model.
+We define the corresponding  visualization callbacks as we initialize 
+the trainer and then simply start the training via calling the `trainer.train_model(...)` method:
+```python
+print("creating training")
+trainer = Seq2SeqModelTrainer(
+    data_loader=data_loader_training,
+    minibatch_callbacks=[
+        # check numerical stability
+        CheckNaN(),
+        # plot parameter distribution
+        PlotParameters(folder_path=MODEL_FOLDER,
+                       relative_path="parameter_plots"),
+        # run a language model evaluation on some test data
+        LanguageModelEvaluation(folder_path=MODEL_FOLDER,
+                                relative_path="lm_evaluation",
+                                data_loader=data_loader_test),
+        # generate some text from a pre-defined seed
+        GenerateText(folder_path=MODEL_FOLDER,
+                     relative_path=os.path.join("generated_text", "0"),
+                     seed_string="how do i cancel my",
+                     n_tokens=100),
+    ],
+    batch_callbacks=[
+        # once per iteration, extract the encoder from the language model
+        # and use it as encoder for a text classifier that we evaluate
+        TextClassifierEvaluation(folder_path=MODEL_FOLDER,
+                                 relative_path="text_classifier_evaluation",
+                                 corpus=corpus,
+                                 n_iterations=2,
+                                 build_classifier=build_text_classifier),  
+        # finally, save the current model state
+        ModelSaverCallback(
+            model_saver=QueuedModelSaver(
+                path_to_folder=os.path.join(MODEL_FOLDER, "saved_models"),
+                model_name=MODEL_NAME,
+                queue_size=2))
+    ])
+
+print("start training")
+trainer.train_model(model=language_model,
+                    n_iterations=100,
+                    minibatch_size=64,
+                    backprop_length=150,
+                    text_batch_size=10000,
+                    batch_first=False,
+                    reduction="mean",
+                    text_kw="texts")
+
+```
+The resulting visualization show us how the language model performs over time: 
+![alt text](readme_images/lm_loss.png "Language model loss over time")
+
+We can also introspect the parameter distribution over time:
+![alt text](readme_images/parameters.png "Language model parameter distribution over time")
+
+Or how the model generated texts over the course of training:
+![alt text](readme_images/lm_text_generation.png "Text generation over time")
+
+Finally, we can see how the language model encoder affects the performance of the resulting text classifier 
+(and that it totally overfits to the training data):
+![alt text](readme_images/transfer_learning_acc.png "Classifier loss over time")
+
 
 
 # Suggested Workflow
