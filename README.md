@@ -622,11 +622,9 @@ Subclass of `KeyedLazyDataLoader` that can be used to cycle through big but fini
 model corpus that does not fit into memory but as such does not change as training progresses.
 
 # Running the evaluation
-- run the evaluation via evaluate.py at the root of the project
-
-- trains the model and runs additional callbacks
-
-- results are saved in a given folder
+Once the model and its trainer is defined, we can start the evaluation by calling the `trainer.train_model(...)` method.
+Depending on what callbacks are added to the trainer object, the respective evaluation results, plots and serialized models are
+stored in a common folder as defined in the trainer callbacks.
 
 ![alt text](readme_images/evaluation_folder.png)
 
