@@ -602,7 +602,7 @@ data values:
 [0.1]
 ####################
 ```
-Note that the last minibatch has n_data % minibatch_size and is not cut off per default.
+Note that the last minibatch has the length n_data % minibatch_size and is not cut off per default.
 
 ### KeyedSubsampledBatchLoader(EagerDataLoader)
 Mostly the same as KeyedBatchLoader, instances of this class yield mini-batches 
