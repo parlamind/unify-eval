@@ -517,8 +517,6 @@ We finally can switch to tensorboard to inspect the single runs:
 ![alt text](readme_images/hyperopt_tensorboard.png)
 
 
-# Data-related classes
-
 ## DataLoader
 `DataLoader` instances provide models access to the actual data.
 They can yield mini-batches over the training data, sample subsets of bigger corpora 
