@@ -580,7 +580,7 @@ data_loader = KeyedBatchLoader(subject_lines=subject_lines,
                                message_bodies=message_bodies,
                                sentiment=sentiment)
 ```
-The data loader than yields minibatches that are dictionaries mapping from the data name to its values:
+The data loader then yields minibatches that are dictionaries mapping from the data name to its values:
 
 ```python
 for i_mimibatch, minibatch in enumerate(data_loader.yield_minibatches(minibatch_size=2,
@@ -654,7 +654,7 @@ tensorboard data via the command line:
 For instance, let's imagine we want to train an (addmitedly *very* simple) LSTM on some language model corpus and then
 take it as an encoder for a text classifier. We are interested in
 how the performance of the resulting text classifier improves as we train the language model.
-We define the corresponding  visualization callbacks as we initialize 
+We define the corresponding  visualization callbacks (usually subclasses of `TensorboardCallback`) as we initialize 
 the trainer and then simply start the training via calling the `trainer.train_model(...)` method:
 ```python
 print("creating training")
