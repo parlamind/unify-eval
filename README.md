@@ -1,5 +1,14 @@
-# Key Concepts
+
+# UnifyEval
+
+__UnifyEval__ is a python library that is made to facilitate the comparison of different NLP machine learning
+ pipelines with different backends. It offers a principled way of building and saving decomposable end-to-end models,
+ monitoring the training and evaluation process of machine learning pipelines as well as plug-and-play solutions for 
+ bayesian hyperparameter optimization and adversarial training.
+
 ## Focus on end-to-end pipelines
+
+
 
 ![alt text](readme_images/end2end.png)
 
