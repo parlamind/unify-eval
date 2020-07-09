@@ -256,9 +256,9 @@ implemented in the respective `push(**kwargs)` method of every layer:
 
 ### Layer Slicing
 Via the Layer API you can slice a model into into its respective components for further reuse.
-Slicing can be done via explicit slice objects (`some_model[0:1]`) or in the case of singleton extractions
-also via passing the index (`some_layer[0]`) or name (`some_layer[“layer_0“]`) of the layer to extract.
-Alternatively you can also extract the layer name as an actual field (`some_model.layers.some_layer`):
+Slicing can be done via explicit slice objects (`model[0:1]`) or in the case of singleton extractions
+also via passing the index (`model[0]`) or name (`model[“layer_0“]`) of the layer to extract.
+Alternatively you can also extract the layer name as an actual field (`model.layer_0`):
 
 ![alt text](readme_images/layer_slicing.png)
 
@@ -267,7 +267,36 @@ As a real life example, take the shared layers between language models, text emb
 ![alt text](readme_images/layered_model_example.png)
 
 
+The code to construct such a model is straightforward:
+```python
+# initialize layers
+tokenizer: Layer = ...
+sequence_mapper: Layer = ...
+core_model: Layer = ...
+token_classifier: Layer = ...
+aggregator: Layer = ...
+label_classifier: Layer = ...
 
+# concatenate single layers into more complex models
+# We start by initializing an empty Layer instance and attach named sub-layers
+preprocessing = Layer() \
+                + ("tokenizer", tokenizer) \
+                + ("sequence_mapper", sequence_mapper)
+language_model = Layer() \
+                 + ("preprocessing", preprocessing) \
+                 + ("core_model", core_model) \
+                 + ("token_classifier", token_classifier)
+text_embedding_model = Layer() \
+                       + ("preprocessing", preprocessing) \
+                       + ("core_model", core_model) \
+                       + ("aggregator", aggregator)
+text_embedding_model = Layer() \
+                       + ("text_embedding_model", text_embedding_model) \
+                       + ("label_classifier", label_classifier)
+
+assert text_embedding_model == language_model[:-1] + ("aggregator", aggregator)
+
+```
 ## StatefulLayeredModel
 Also layered models can be stateful. For instance, you can have a transfer learning model based on an LSTM,
 which is inherently stateful. In such cases, calling e.g. `model.get_state()` will return all states of the
