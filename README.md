@@ -316,6 +316,47 @@ corresponding sub-layers as nested lists. Again, the actual data structure of a 
 StatefulLayeredModel also implements an `unroll()` method that input subsequences through the
 pipeline to allow for truncated back-propagation through time.
 
+## Using GPUs
+In order to run a model on a GPU, the `to_device()` method of the class has to be overwritten.
+For instance, in the case of a simple MLP classifier that wraps around a pytorch model,
+we first call the method implementation of the base class (which only overwrites the current 
+`self.current_device` property) and then transfer the pytorch model to the given device:
+
+```python
+def to_device(self, name: str) -> "MLPClassifier":
+    # overwrite self.current_device
+    super().to_device(name)
+    # transfer pytorch module to device
+    self.mlp.to(name)
+    return self
+```
+)
+
+We also have to put our input and target data on the respective device in order to have it interact with the model.
+For our example, we make sure that when we calculate the logits, our input is first mapped to the current device.
+Then, when calculating the current loss, we also to the same with out target data.
+
+```python
+def get_logits(self, as_tensor: bool = False, **kwargs) -> Tensor:
+    # get input data, transform it to pytorch tensor and then transfer it to current device
+    logits = self.mlp(torch.from_numpy(kwargs["input_features"]).float().to(self.current_device))
+    return logits if as_tensor else logits.detach().cpu().numpy()
+
+
+def get_loss(self, as_tensor: bool = False, **kwargs) -> Dict[str, Tensor]:
+    logits = self.get_logits(as_tensor=True, **kwargs)
+    target = torch.from_numpy(kwargs[kwargs["label_kw"]]).to(self.current_device)
+    loss = self.xent(input=logits, target=target)
+    loss = loss if as_tensor else loss.detach().cpu().item()
+    return dict(cross_entropy=loss)
+```
+
+The corresponding model can then be easily put on any given device:
+
+```python
+model = ...
+model.to_device("cuda:0").to_cpu().to_gpu()
+```
 
 ## Trainer
 
