@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from typing import List
 
 import numpy as np
-from fastai.text import transform
 
 from unify_eval.utils.iter_utils import chunking, lazy_chunking
 from unify_eval.utils.text_sequence import SequenceMapper
+from unify_eval.utils.vocab import PAD
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ class SequentialData:
         # initialize index array with padding value
         n_minibatches = int(np.ceil(max_len / backprop_length))
         indices = np.full(shape=(n_minibatches, minibatch_size, backprop_length),
-                          fill_value=sequence_mapper.vocab.stoi[transform.PAD])
+                          fill_value=sequence_mapper.vocab.token2id[PAD])
 
         for i_text, text in enumerate(encoded_texts):
             for i_chunk, chunk in enumerate(lazy_chunking(text, chunk_size=backprop_length)):
@@ -93,16 +93,15 @@ class Seq2SeqData:
         # initialize index array with padding value
         n_minibatches = n_tokens // (minibatch_size * text_length)
         indices = np.full(shape=(n_minibatches, minibatch_size, text_length),
-                          fill_value=sequence_mapper.vocab.stoi[transform.PAD])
+                          fill_value=sequence_mapper.vocab.token2id[PAD])
 
-        # fill it! yay
+        # fill it
 
         chunks = chunking(flattened_tokens, chunk_size=text_length)
 
         for i_minibatch_entry in range(minibatch_size):
             for i_minibatch in range(n_minibatches):
                 entry_tokens = next(chunks)
-                # print(f"n_tokens {n_tokens} n_minibatches {n_minibatches} i_minibatch {i_minibatch} i_minibatch_entry {i_minibatch_entry} tokens {sm.decode_texts([entry_tokens])}")
                 indices[i_minibatch, i_minibatch_entry] = entry_tokens
 
         input_indices = []

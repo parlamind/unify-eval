@@ -9,7 +9,6 @@ import joblib
 import keras
 import numpy as np
 import torch as t
-from fastai.text import RNNLearner, load_learner
 
 from unify_eval.model.types import Tensor
 from unify_eval.utils.serialization import TarWriter, TarReader
@@ -158,7 +157,6 @@ class Backend(Enum):
     """
     Enum to represent supported backends.
     """
-    fastai_rnn_learner = "fastai_rnn_learner"
     pytorch = "pytorch"
     keras = "keras"
     deep_model = "deep_model"
@@ -180,9 +178,6 @@ class Backend(Enum):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
         backend_folder = self._make_backend_folder(folder_path)
-        if self == Backend.fastai_rnn_learner:
-            component: RNNLearner = component
-            component.export(os.path.join(backend_folder, f"{name}"))
         if self == Backend.pytorch:
             t.save(component, os.path.join(backend_folder, f"{name}.pt"))
         if self == Backend.keras:
@@ -196,9 +191,6 @@ class Backend(Enum):
         """
         load a single component stored under the given path
         """
-        if self == Backend.fastai_rnn_learner:
-            split_path = os.path.split(path)
-            return load_learner(path=os.path.join(*split_path[:-1]), file=split_path[-1])
         if self == Backend.pytorch:
             return t.load(path)
         if self == Backend.keras:
@@ -213,8 +205,6 @@ class Backend(Enum):
         """
         given some actual object, try to find the respective Backend enum
         """
-        if isinstance(obj, RNNLearner):
-            return Backend.fastai_rnn_learner
         if isinstance(obj, t.nn.Module):
             return Backend.pytorch
         if isinstance(obj, keras.Model):

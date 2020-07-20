@@ -1,9 +1,7 @@
 from typing import List
-
-from fastai.text import transform
-
 from unify_eval.model.layers.layer_base import Layer
-from unify_eval.utils.text_sequence import FastAITokenizer, SequenceMapper, Tokenizer
+from unify_eval.utils.text_sequence import SequenceMapper, Tokenizer
+from unify_eval.utils.vocab import Vocab, PAD
 
 
 class TokenizerLayer(Tokenizer, Layer):
@@ -39,38 +37,18 @@ class TokenizerLayer(Tokenizer, Layer):
         return TokenizerLayer(**kwargs)
 
 
-class FastAITokenizerLayer(FastAITokenizer, Layer):
-    """
-    Wrapper around FastAITokenizer instance.
-    """
-
-    def __init__(self, lang: str):
-        self.lang = lang
-        FastAITokenizer.__init__(self, lang)
-        Layer.__init__(self)
-
-    def push(self, **kwargs) -> dict:
-        text_kw = kwargs["text_kw"]
-        tokenized = self.tokenize_all(texts=kwargs[text_kw], max_len=kwargs["max_len"] if "max_len" in kwargs else None)
-        kwargs["tokenized_texts"] = tokenized
-        return kwargs
-
-    def get_components(self) -> dict:
-        return {"lang": self.lang}
-
-
 class SequenceMapperLayer(SequenceMapper, Layer):
     """
     Wrapper around a SequenceMapper instance.
     """
 
-    def __init__(self, vocab: transform.Vocab):
+    def __init__(self, vocab: Vocab):
         SequenceMapper.__init__(self, vocab)
         Layer.__init__(self)
 
     def push(self, **kwargs) -> dict:
         kwargs["encoded_texts"] = self.encode_texts(tokenized_texts=kwargs["tokenized_texts"])
-        kwargs["padding_value"] = self.vocab.stoi["xxpad"]
+        kwargs["padding_value"] = self.vocab.token2id[PAD]
         return kwargs
 
     def get_components(self) -> dict:

@@ -3,10 +3,11 @@ from typing import List, Tuple
 
 from unify_eval.model.deep_model import DeepModelBase
 from unify_eval.model.layers.layer_base import Layer
-from unify_eval.model.layers.preprocessing import FastAITokenizerLayer, SequenceMapperLayer
+from unify_eval.model.layers.preprocessing import SequenceMapperLayer, TokenizerLayer
 from unify_eval.model.mixins.stateful import StatefulLayeredModel
 from unify_eval.model.types import Tensor
 from unify_eval.training.seq2seq.seq2seq_data import SequentialData
+from unify_eval.utils.vocab import PAD
 
 
 class EmbeddingModel(DeepModelBase):
@@ -38,15 +39,12 @@ class TextEmbeddingModel(StatefulLayeredModel, EmbeddingModel):
             tokenized_texts=tokenized_texts,
             backprop_length=kwargs["embedding_backprop_length"])
 
-        # print(f"seq data shape {sequential_data.batched_input_data.shape}")
-
         # send everything trough model
         aggregated_outputs = self.language_model_core.unroll(sequential_data=sequential_data,
                                                              unrollable_kw="sequential_data",
                                                              single_input_kw="encoded_texts",
                                                              padding_value=
-                                                             self.preprocessing.sequence_mapper.vocab.stoi[
-                                                                 "xxpad"],
+                                                             self.preprocessing.sequence_mapper.vocab.token2id[PAD],
                                                              **kwargs)
         # aggregate everything
         return self.aggregator.push(**aggregated_outputs)
@@ -55,7 +53,7 @@ class TextEmbeddingModel(StatefulLayeredModel, EmbeddingModel):
         return self.push(**kwargs)["text_embedding"]
 
     @classmethod
-    def from_layers(cls, tokenizer: FastAITokenizerLayer,
+    def from_layers(cls, tokenizer: TokenizerLayer,
                     sequence_mapper: SequenceMapperLayer,
                     language_model_core: StatefulLayeredModel,
                     aggregator: Layer) -> "TextEmbeddingModel":

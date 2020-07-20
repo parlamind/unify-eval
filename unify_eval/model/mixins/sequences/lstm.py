@@ -2,7 +2,6 @@ from typing import Dict, Iterator
 
 import numpy as np
 import torch as t
-from fastai.text import to_detach
 
 from unify_eval.model.layers.layer_base import Layer
 from unify_eval.model.mixins.stateful import StatefulModel
@@ -13,6 +12,7 @@ class LSTMLayer(t.nn.LSTM, Layer, StatefulModel):
     """
     Subclass of both torch.nn.LSTM, Layer and StatefulModel.
     """
+
     def __init__(self,
                  input_size: int,
                  hidden_size: int,
@@ -50,13 +50,26 @@ class LSTMLayer(t.nn.LSTM, Layer, StatefulModel):
         return self.state
 
     def push(self, **kwargs) -> dict:
+        def detach_all(xs: list, cpu: bool = True) -> list:
+            "Recursively detach lists of tensors in `b `; put them on the CPU if `cpu=True`."
+
+            def detach(x, cpu=True):
+                if isinstance(x, list):
+                    return detach_all(xs=x, cpu=cpu)
+                if not isinstance(x, t.Tensor):
+                    return x
+                x = x.detach()
+                return x.cpu() if cpu else x
+
+            return [detach(x, cpu=cpu) for x in xs]
+
         embeddings: t.Tensor = kwargs["embeddings"]
         input_lengths = kwargs["input_lengths"]
         packed = t.nn.utils.rnn.pack_padded_sequence(embeddings, input_lengths, enforce_sorted=False)
 
         outputs, hidden = self(input=packed, hx=self.get_state())
         # detach state
-        hidden = to_detach(hidden)
+        hidden = detach_all(hidden)
         self.set_state(state=hidden)
 
         outputs, output_lengths = t.nn.utils.rnn.pad_packed_sequence(sequence=outputs)
