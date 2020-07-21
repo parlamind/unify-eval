@@ -6,8 +6,15 @@ __UnifyEval__ is a python library that is made to facilitate the comparison of d
  monitoring the training and evaluation process of machine learning pipelines as well as plug-and-play solutions for 
  bayesian hyperparameter optimization and adversarial training.
 
-## Focus on end-to-end pipelines
+## Installation
 
+In order to use __UnifyEval__, you have to clone this github repository and then build it from source.
+1. First clone the repository via `git clone https://github.com/parlamind/unify-eval.git`
+2. Then run the setup script to build the source distribution: `python3 setup.py sdist`
+3. Then switch to your own project and install it from the source distribution: `python3 -m pip install path/to/unify-eval/dist/unify-eval-1.0.tar.gz 
+`
+
+## Focus on end-to-end pipelines
 
 
 ![alt text](readme_images/end2end.png)
