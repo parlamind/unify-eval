@@ -337,7 +337,7 @@ def to_device(self, name: str) -> "MLPClassifier":
     self.mlp.to(name)
     return self
 ```
-)
+
 
 We also have to put our input and target data on the respective device in order to have it interact with the model.
 For our example, we make sure that when we calculate the logits, our input is first mapped to the current device.
