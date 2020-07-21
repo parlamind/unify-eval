@@ -56,7 +56,6 @@ install_requires = [
     "opt-einsum==3.2.1",
     "packaging==20.4",
     "pandas==1.0.5",
-    "paraphrase-model==1.8",
     "Pillow==7.2.0",
     "pkginfo==1.5.0.1",
     "plac==1.2.0",
