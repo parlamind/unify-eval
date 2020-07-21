@@ -345,15 +345,27 @@ Then, when calculating the current loss, we also to the same with out target dat
 
 ```python
 def get_logits(self, as_tensor: bool = False, **kwargs) -> Tensor:
-    # get input data, transform it to pytorch tensor and then transfer it to current device
-    logits = self.mlp(torch.from_numpy(kwargs["input_features"]).float().to(self.current_device))
+    # extract input features from kwargs
+    input_features = kwargs["input_features"]
+    # map everything to pytorch tensor and transfer it to current device
+    input_features = t.from_numpy(input_features).float().to(self.current_device)
+    # push it through pytorch module to yield logits
+    logits = self.mlp(input_features)
+    # return it either as pytorch tensor of simple numpy array
     return logits if as_tensor else logits.detach().cpu().numpy()
 
-
 def get_loss(self, as_tensor: bool = False, **kwargs) -> Dict[str, Tensor]:
+    # calculate logits and return them as pytorch tensor
     logits = self.get_logits(as_tensor=True, **kwargs)
-    target = torch.from_numpy(kwargs[kwargs["label_kw"]]).to(self.current_device)
+    # extract raw label data from kwargs
+    raw_labels = kwargs[kwargs["label_kw"]]
+    # map data from actual label names to respective indices
+    mapped_labels = self.label_mapper.map_to_indices(labels=raw_labels)
+    # map numpy array to pytorch tensor and transfer it to current device
+    target = t.from_numpy(mapped_labels).to(self.current_device)
+    # calculate loss
     loss = self.xent(input=logits, target=target)
+    # map loss back to simple float if needed, otherwise leave it as pytorch tensor 
     loss = loss if as_tensor else loss.detach().cpu().item()
     return dict(cross_entropy=loss)
 ```
@@ -364,6 +376,9 @@ The corresponding model can then be easily put on any given device:
 model = ...
 model.to_device("cuda:0").to_cpu().to_gpu()
 ```
+
+Remember that if your model uses __keras__ as backend, it should automatically put models on available GPUs.
+ 
 
 ## Trainer
 
