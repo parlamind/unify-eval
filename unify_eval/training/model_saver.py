@@ -33,7 +33,7 @@ class QueuedModelSaver:
         self.paths_to_models.append(path)
         while len(self.paths_to_models) > self.queue_size:
             self._remove_last_model()
-        model.save(path=self._make_full_model_path(tags))
+        model.to_cpu().save(path=self._make_full_model_path(tags))
 
     def _make_full_model_path(self, tags: Iterable[str]):
         tags = "_".join(str(tag) for tag in tags)
