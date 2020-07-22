@@ -4,10 +4,10 @@ import numpy as np
 import torch
 from torch.nn import CrossEntropyLoss
 
-from deep_learning.model.deep_model import DeepModelBase
-from deep_learning.model.mixins.classification import Classifier
-from deep_learning.model.types import Tensor
-from deep_learning.utils.label_mapper import LabelMapper
+from unify_eval.model.deep_model import DeepModelBase
+from unify_eval.model.mixins.classification import Classifier
+from unify_eval.model.types import Tensor
+from unify_eval.utils.label_mapper import LabelMapper
 
 
 class Layer(DeepModelBase):
