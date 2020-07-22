@@ -217,7 +217,7 @@ class Backend(Enum):
         load a single component stored under the given path
         """
         if self == Backend.pytorch:
-            return t.load(path)
+            return t.load(path, map_location=t.device('cpu'))
         if self == Backend.keras:
             return keras.models.load_model(path)
         if self == Backend.deep_model:
