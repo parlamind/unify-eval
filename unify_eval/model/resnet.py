@@ -12,6 +12,7 @@ from unify_eval.utils.label_mapper import LabelMapper
 from unify_eval.utils.text_sequence import SequenceMapper, Tokenizer
 
 
+
 class ResNetLayer(t.nn.Module):
     """
     Single pytorch ResNet layer
@@ -122,7 +123,9 @@ class ResNetModel(Classifier, SequenceInputModel):
 
     def get_logits(self, clauses: ListOfRawTexts, **kwargs) -> Tensor:
         indices = t.from_numpy(
-            self.map_to_index_sequence(raw_texts=clauses, max_length=self.max_len)).long()
+            self.map_to_index_sequence(raw_texts=clauses, max_length=self.max_len))\
+            .long()\
+            .to(self.current_device)
         return self.resnet.forward(indices=indices)
 
     def map_to_embedding_sequence(self, max_length: int,
@@ -164,4 +167,11 @@ class ResNetModel(Classifier, SequenceInputModel):
         }
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:
-        return dict((name, p.detach().numpy()) for name, p in self.resnet.named_parameters())
+        return dict((name, p.detach().cpu().numpy()) for name, p in self.resnet.named_parameters())
+
+    def to_device(self, name: str) -> "ResNetModel":
+        super().to_device(name)
+        self.resnet.to(name)
+        return self
+
+

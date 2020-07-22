@@ -19,7 +19,8 @@ class TransformerClassifier(t.nn.Module):
         self.finetuning = finetuning
         self.clf_architecture = clf_architecture
 
-    def forward_encoder(self, token_indices: t.Tensor, attention_mask: t.Tensor, token_type_ids: t.Tensor = None) -> t.Tensor:
+    def forward_encoder(self, token_indices: t.Tensor, attention_mask: t.Tensor,
+                        token_type_ids: t.Tensor = None) -> t.Tensor:
         return self.encoder(token_indices, attention_mask=attention_mask)[0] if token_type_ids is None \
             else self.encoder(token_indices, attention_mask=attention_mask, token_type_ids=token_type_ids)[0]
 
@@ -71,8 +72,8 @@ class TransformerClassificationModel(Classifier):
                           tokenized_texts]
 
         # Convert inputs to PyTorch tensors
-        token_indices = t.tensor(indexed_texts)
-        attention_mask = t.tensor(attention_mask)
+        token_indices = t.tensor(indexed_texts).to(self.current_device)
+        attention_mask = t.tensor(attention_mask).to(self.current_device)
 
         return {
             "token_indices": token_indices,
@@ -80,7 +81,7 @@ class TransformerClassificationModel(Classifier):
         }
 
     def predict_label_probabilities(self, **kwargs) -> Tensor:
-        return F.softmax(self.get_logits(**kwargs), dim=-1).detach().numpy()
+        return F.softmax(self.get_logits(**kwargs), dim=-1).detach().cpu().numpy()
 
     def get_logits(self, **kwargs) -> Tensor:
         return self.transformer_classifier.forward(**self.preprocess(texts=kwargs["clauses"]))
@@ -95,9 +96,11 @@ class TransformerClassificationModel(Classifier):
     def get_loss(self, as_tensor: bool = False, **kwargs) -> Dict[str, Tensor]:
         logits = self.get_logits(**kwargs)
         loss = self._xent.forward(input=logits,
-                                  target=t.from_numpy(self.label_mapper.map_to_indices(kwargs["labels"])).long())
+                                  target=t.from_numpy(self.label_mapper.map_to_indices(kwargs["labels"]))
+                                  .long()
+                                  .to(self.current_device))
         if not as_tensor:
-            loss = loss.detach().item()
+            loss = loss.detach().cpu().item()
         return {
             "cross_entropy": loss
         }
@@ -114,7 +117,12 @@ class TransformerClassificationModel(Classifier):
         }
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:
-        return dict((n, p.detach().numpy()) for n, p in self.transformer_classifier.named_parameters())
+        return dict((n, p.detach().cpu().numpy()) for n, p in self.transformer_classifier.named_parameters())
+
+    def to_device(self, name: str) -> "TransformerClassificationModel":
+        super().to_device(name)
+        self.transformer_classifier.to(name)
+        return self
 
 
 class BertClassificationModel(TransformerClassificationModel):
@@ -140,8 +148,8 @@ class BertClassificationModel(TransformerClassificationModel):
         attention_mask = t.tensor(attention_mask)
 
         tensor_dict = {
-            "token_indices": token_indices,
-            "attention_mask": attention_mask
+            "token_indices": token_indices.to(self.current_device),
+            "attention_mask": attention_mask.to(self.current_device)
         }
 
         if not self.distilling:
@@ -172,6 +180,6 @@ class RobertaClassificationModel(TransformerClassificationModel):
         token_indices = t.tensor(indexed_texts)
         attention_mask = t.tensor(attention_mask)
         return {
-            "token_indices": token_indices,
-            "attention_mask": attention_mask
+            "token_indices": token_indices.to(self.current_device),
+            "attention_mask": attention_mask.to(self.current_device)
         }

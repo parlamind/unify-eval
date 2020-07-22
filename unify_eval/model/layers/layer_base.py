@@ -1,13 +1,13 @@
-from typing import List, Dict, Tuple, Iterator
+from typing import List, Dict, Tuple, Iterator, Optional
 
 import numpy as np
 import torch
 from torch.nn import CrossEntropyLoss
 
-from unify_eval.model.deep_model import DeepModelBase
-from unify_eval.model.mixins.classification import Classifier
-from unify_eval.model.types import Tensor
-from unify_eval.utils.label_mapper import LabelMapper
+from deep_learning.model.deep_model import DeepModelBase
+from deep_learning.model.mixins.classification import Classifier
+from deep_learning.model.types import Tensor
+from deep_learning.utils.label_mapper import LabelMapper
 
 
 class Layer(DeepModelBase):
@@ -117,13 +117,20 @@ class Layer(DeepModelBase):
             layer.eval_mode()
         return self
 
+    def to_device(self, name: str) -> "Layer":
+        self.current_device = name
+        for layer in self.yield_sub_layers():
+            layer.to_device(name)
+        return self
+
 
 class PytorchLayer(Layer, torch.nn.Module):
     def __init__(self,
                  input_kws: List[str],
                  output_kws: List[str]
                  ):
-        super().__init__()
+        Layer.__init__(self)
+        torch.nn.Module.__init__(self)
         self.input_kws = input_kws
         self.output_kws = output_kws
 
@@ -141,7 +148,7 @@ class PytorchLayer(Layer, torch.nn.Module):
         return self.parameters()
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:
-        return dict((key, value.detach().numpy()) for key, value in self.pytorch_module.named_parameters())
+        return dict((key, value.detach().cpu().numpy()) for key, value in self.named_parameters())
 
     def train_mode(self) -> "PytorchLayer":
         self.train()
@@ -149,6 +156,11 @@ class PytorchLayer(Layer, torch.nn.Module):
 
     def eval_mode(self) -> "PytorchLayer":
         self.eval()
+        return self
+
+    def to_device(self, name: str) -> "PytorchLayer":
+        super().to_device(name)
+        self.to(name)
         return self
 
 
@@ -193,6 +205,11 @@ class PytorchWrapperLayer(Layer):
 
     def eval_mode(self) -> "PytorchWrapperLayer":
         self.pytorch_module.eval()
+        return self
+
+    def to_device(self, name: str) -> "PytorchWrapperLayer":
+        super().to_device(name)
+        self.pytorch_module.to(name)
         return self
 
 

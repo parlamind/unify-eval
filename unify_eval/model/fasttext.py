@@ -31,6 +31,8 @@ class PytorchFastTextModule(t.nn.Module):
         i.e. sample input following a standard normal distribution and push it through a linear transformation
         """
         z = t.randn(size=(n, self.linear.in_features))
+        # map to respective device
+        z = z.to(next(self.linear.parameters()).device)
         return self.linear(z)
 
     def embed(self, indices: t.Tensor) -> t.Tensor:
@@ -94,10 +96,10 @@ class PytorchFastText(Classifier):
         self.optimizer.zero_grad()
 
     def predict_label_probabilities(self, **kwargs) -> Tensor:
-        return self.get_logits(**kwargs).detach().numpy()
+        return self.get_logits(**kwargs).detach().cpu().numpy()
 
     def get_logits(self, **kwargs) -> Tensor:
-        return self.pytorch_model(self.preprocess_texts(kwargs[self.text_kw]))
+        return self.pytorch_model(self.preprocess_texts(kwargs[self.text_kw]).to(self.current_device))
 
     def train(self, maximize_junk_entropy: bool = False,
               **kwargs) -> "PytorchFastText":
@@ -133,7 +135,7 @@ class PytorchFastText(Classifier):
             logits = self.get_logits(clauses=clauses_true, **kwargs)
             loss_dict = {"cross_entropy": self.xent(
                 input=logits,
-                target=t.from_numpy(self.label_mapper.map_to_indices(labels_true)).long())}
+                target=t.from_numpy(self.label_mapper.map_to_indices(labels_true)).long().to(self.current_device))}
 
             texts_junk = get_junk_data(texts=texts, targets=labels)
             print(f"{len(texts_junk)} junk texts found")
@@ -143,21 +145,23 @@ class PytorchFastText(Classifier):
                     t.softmax(self.pytorch_model(self.preprocess_texts(texts_junk)), dim=-1))
         else:
 
-            logits = self.get_logits(clauses=texts, **kwargs)
+            logits = self.get_logits(**{self.text_kw: texts}, **kwargs)
             loss_dict = {"cross_entropy": self.xent(
                 input=logits,
-                target=t.from_numpy(self.label_mapper.map_to_indices(labels)).long())}
+                target=t.from_numpy(self.label_mapper.map_to_indices(labels))
+                    .long()
+                    .to(self.current_device))}
 
         if self.junk_noise_entropy_weight > 0.0:
             loss_dict["shannon_entropy"] = self.shannon_entropy(
                 t.softmax(self.pytorch_model.sample_logits(n=logits.shape[0]), dim=-1))
         if not as_tensor:
-            loss_dict = dict((k, v.detach().item()) for k, v in loss_dict.items())
+            loss_dict = dict((k, v.detach().cpu().item()) for k, v in loss_dict.items())
         return loss_dict
 
-    @staticmethod
-    def from_components(**kwargs) -> "PytorchFastText":
-        return PytorchFastText(**kwargs)
+    @classmethod
+    def from_components(cls, **kwargs) -> "PytorchFastText":
+        return cls(**kwargs)
 
     def get_components(self) -> dict:
         return {
@@ -172,7 +176,7 @@ class PytorchFastText(Classifier):
         }
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:
-        return dict((name, p.detach().numpy()) for name, p in self.pytorch_model.named_parameters())
+        return dict((name, p.detach().cpu().numpy()) for name, p in self.pytorch_model.named_parameters())
 
     def preprocess_texts(self, texts: List[str]) -> t.Tensor:
         """
@@ -181,7 +185,9 @@ class PytorchFastText(Classifier):
         onehots = self.hashing_vectorizer.transform(texts).toarray()
         # extract all the non-zero onehot indices
         sequences = np.array([np.arange(d.shape[-1])[d > 0.1] for d in onehots])
-        return t.from_numpy(sequence.pad_sequences(sequences=sequences, maxlen=self.n_features_to_use)).long()
+        return t.from_numpy(sequence.pad_sequences(sequences=sequences, maxlen=self.n_features_to_use)) \
+            .long() \
+            .to(self.current_device)
 
     @staticmethod
     def make(label_mapper: LabelMapper,
@@ -216,6 +222,11 @@ class PytorchFastText(Classifier):
                                n_features_to_use=n_features_to_use,
                                text_kw=text_kw,
                                label_kw=label_kw)
+
+    def to_device(self, name: str) -> "PytorchFastText":
+        super().to_device(name)
+        self.pytorch_model.to(name)
+        return self
 
 
 class MessageLevelFastTextModule(t.nn.Module):
@@ -530,17 +541,17 @@ class FastText(Classifier):
 
     def predict_label_probabilities(self, **kwargs) -> Tensor:
         indices = self.preprocess_clauses(texts=kwargs[self.text_kw])
-        return self.keras_model.predict_proba(x=indices)
+        return self.keras_model.predict(x=indices)
 
     def _logit(self, x):
         return np.log(x / (np.clip(x, 1e-8, (1.0 - 1e-8)) - x))
 
     def get_logits(self, **kwargs) -> Tensor:
         indices = self.preprocess_clauses(texts=kwargs[self.text_kw])
-        return self._logit(self.keras_model.predict_proba(x=indices))
+        return self._logit(self.keras_model.predict(x=indices))
 
     def train(self, **kwargs) -> "FastText":
-        self.keras_model.train_on_batch(x=self.preprocess_clauses(kwargs[self.text_kw]),
+        self.keras_model.train_on_batch(x=self.preprocess_clauses(texts=kwargs[self.text_kw]),
                                         y=utils.to_categorical(
                                             y=self.label_mapper.map_to_indices(kwargs[self.label_kw]),
                                             num_classes=self.label_mapper.n_labels))
@@ -627,3 +638,8 @@ class FastText(Classifier):
                         n_features_to_use=n_features_to_use,
                         text_kw=text_kw,
                         label_kw=label_kw)
+
+    def to_device(self, name: str) -> "DeepModelBase":
+        return super().to_device("auto")
+
+

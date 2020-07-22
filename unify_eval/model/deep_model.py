@@ -21,6 +21,8 @@ class DeepModelBase(abc.ABC):
     (e.g. a single layer in a model can have optimizable parameters, but actual loss is defined for entire model only)
     """
 
+    current_device: str = None
+
     @abc.abstractmethod
     def get_components(self) -> dict:
         """
@@ -58,6 +60,29 @@ class DeepModelBase(abc.ABC):
         :return: current model
         """
         return self
+
+    def to_device(self, name: str) -> "DeepModelBase":
+        """
+        sets current device name and returns self
+        :param name: name of device
+        :return: object with current device set to given value
+        """
+        self.current_device = name
+        return self
+
+    def to_cpu(self) -> "DeepModelBase":
+        """
+        sets current device name to cpu and returns self
+        :return: object with current device set to cpu
+        """
+        return self.to_device("cpu")
+
+    def to_gpu(self) -> "DeepModelBase":
+        """
+        sets current device name to cpu and returns self
+        :return: object with current device set to cpu
+        """
+        return self.to_device("cuda")
 
     @classmethod
     @abc.abstractmethod

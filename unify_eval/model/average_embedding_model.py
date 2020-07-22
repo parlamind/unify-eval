@@ -122,7 +122,7 @@ class AverageEmbeddingModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
                                        with_respect_to=embeddings,
                                        module=self.average_embedding_classifier)
         self.average_embedding_classifier.zero_grad()
-        saliency = -t.einsum("abc,acd -> ad", gradients, embeddings.permute((0, 2, 1))).detach().numpy()
+        saliency = -t.einsum("abc,acd -> ad", gradients, embeddings.permute((0, 2, 1))).detach().cpu().numpy()
         return saliency
 
     def get_loss_from_embeddings(self, embeddings: Tensor, **kwargs) -> Dict[str, Tensor]:
@@ -146,7 +146,9 @@ class AverageEmbeddingModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
     def get_logits(self, **kwargs) -> Tensor:
         tokenized_text = self.tokenizer.tokenize_all(kwargs[self.text_kw])
         indices = t.from_numpy(self.map_to_index_sequence(tokenized_texts=tokenized_text,
-                                                          max_length=kwargs["max_length"])).long()
+                                                          max_length=kwargs["max_length"]))\
+            .long()\
+            .to(self.current_device)
         logits = self.average_embedding_classifier(indices=indices)
         return logits
 
@@ -189,7 +191,7 @@ class AverageEmbeddingModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
         }
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:
-        return dict((name, p.detach().numpy())
+        return dict((name, p.detach().cpu().numpy())
                     for name, p in self.average_embedding_classifier.named_parameters())
 
     def embed(self, **kwargs) -> np.ndarray:
@@ -197,7 +199,7 @@ class AverageEmbeddingModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
         embeds input to classifier logits
         """
         with t.no_grad():
-            return self.get_logits(**kwargs).detach().numpy()
+            return self.get_logits(**kwargs).detach().cpu().numpy()
 
     def train_mode(self) -> "AverageEmbeddingModel":
         self.average_embedding_classifier.train()
@@ -209,3 +211,10 @@ class AverageEmbeddingModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
 
     def get_module(self) -> t.nn.Module:
         return self.average_embedding_classifier
+
+    def to_device(self, name: str) -> "AverageEmbeddingModel":
+        super().to_device(name)
+        self.average_embedding_classifier.to(name)
+        return self
+
+
