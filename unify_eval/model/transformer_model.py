@@ -105,15 +105,15 @@ class TransformerClassificationModel(Classifier):
             "cross_entropy": loss
         }
 
-    @staticmethod
-    def from_components(**kwargs) -> "TransformerClassificationModel":
-        return TransformerClassificationModel(**kwargs)
+    @classmethod
+    def from_components(cls, **kwargs) -> "TransformerClassificationModel":
+        return cls(**kwargs)
 
     def get_components(self) -> dict:
         return {
             "transformer_classifier": self.transformer_classifier,
             "tokenizer": self.tokenizer,
-
+            "label_mapper": self.label_mapper
         }
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:
