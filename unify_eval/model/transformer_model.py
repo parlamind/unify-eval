@@ -159,6 +159,14 @@ class BertClassificationModel(TransformerClassificationModel):
 
         return tensor_dict
 
+    def get_components(self) -> dict:
+        return {
+            "transformer_classifier": self.transformer_classifier,
+            "tokenizer": self.tokenizer,
+            "label_mapper": self.label_mapper,
+            "distilling": self.distilling
+        }
+
 
 class RobertaClassificationModel(TransformerClassificationModel):
 
