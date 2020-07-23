@@ -175,7 +175,7 @@ def load_model(path: str) -> DeepModel:
 
     components, meta = load_components_and_meta(path=path)
     cls = load_cls(module=meta["module"], cls=meta["cls"])
-    return cls.from_components(**components)
+    return cls.from_components(**components).to_cpu()
 
 
 class Backend(Enum):
