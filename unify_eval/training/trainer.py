@@ -71,6 +71,7 @@ class Trainer:
 
         if batch_callback_step < 1:
             batch_callback_step = 1
+        model.update_training_date()
 
         if iteration % batch_callback_step == 0:
             for call_back in self.batch_callbacks:
@@ -117,7 +118,7 @@ class Trainer:
                                              **kwargs)
             self.data_loader.reset()
 
-        return model.update_training_date()
+        return model
 
 
 class TextClassifierTrainer:
@@ -190,7 +191,7 @@ class TextClassifierTrainer:
         if callback_step < 1:
             callback_step = 1
         model.eval_mode()
-        model.reset()
+        model.reset().update_training_date()
         for call_back in self.batch_callbacks:
             model: StatefulTextClassifier = call_back(model=model, iteration=iteration, i_minibatch=i_minibatch,
                                                       **kwargs)
@@ -233,4 +234,4 @@ class TextClassifierTrainer:
                                                                      **kwargs)
             self.data_loader.reset()
 
-        return model.reset().update_training_date()
+        return model.reset()
