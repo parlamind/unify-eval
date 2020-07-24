@@ -116,7 +116,8 @@ class Trainer:
                                              batch_callback_step=full_batch_callback_step,
                                              **kwargs)
             self.data_loader.reset()
-        return model
+
+        return model.update_training_date()
 
 
 class TextClassifierTrainer:
@@ -232,4 +233,4 @@ class TextClassifierTrainer:
                                                                      **kwargs)
             self.data_loader.reset()
 
-        return model.reset()
+        return model.reset().update_training_date()

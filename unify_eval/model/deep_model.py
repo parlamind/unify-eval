@@ -2,8 +2,9 @@ import abc
 import importlib
 import json
 import os
+from datetime import datetime
 from enum import Enum
-from typing import Dict, Tuple, Iterator
+from typing import Dict, Tuple, Iterator, List
 
 import joblib
 import keras
@@ -124,6 +125,8 @@ class DeepModel(DeepModelBase):
     Models are supposed to be end2end, so they expect some raw (e.g. textual) data and preprocess it themselves.
     Can be trained via a given loss function.
     """
+    # most recent point in time where a training session has been completed
+    training_date: str = ""
 
     @abc.abstractmethod
     def train(self, **kwargs) -> "DeepModel":
@@ -141,6 +144,13 @@ class DeepModel(DeepModelBase):
         :return: dictionary mapping from loss name to respective loss value.
         """
         pass
+
+    def update_training_date(self) -> "DeepModel":
+        """
+        sets training date to current point in time. Should be called after training has finished
+        """
+        self.training_date = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+        return self
 
 
 def load_model(path: str) -> DeepModel:

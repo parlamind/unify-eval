@@ -382,4 +382,4 @@ class HotflipTrainer(Trainer):
                                        iteration,
                                        **kwargs)
 
-        return model
+        return model.update_training_date()
