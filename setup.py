@@ -98,7 +98,6 @@ install_requires = [
     "termcolor==1.1.0",
     "thinc==7.4.1",
     "threadpoolctl==2.1.0",
-    "tokenizers==0.8.1.rc1",
     "torch==1.5.1",
     "torch-vision==0.1.6.dev0",
     "torchvision==0.6.1",

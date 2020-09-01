@@ -17,18 +17,9 @@ def get_data(data, test_data):
     """
     if data == "snips":
         return get_snips_corpus(test_data)
-    else:
-        return get_sebischair_corpus(data, test_data)
 
 
 def get_snips_corpus(test_data):
     name = "test" if test_data else "train"
     corpus = Corpus.fromJSON(path=os.path.join("data", "public", "snips", name + ".json"))
     return corpus
-
-
-def get_sebischair_corpus(name, test_data):
-    complete_name = name + "_test.json" if test_data else name + "_train.json"
-    corpus = Corpus.fromJSON(path=os.path.join("data", "public", "sebischair", complete_name))
-    return corpus
-

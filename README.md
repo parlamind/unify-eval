@@ -840,3 +840,17 @@ training iteration 2
 training iteration 3
 100%|██████████| 1/1 [00:00<00:00, 29.63it/s]
 ```
+
+# Public data
+
+We include the SNIPS dataset for benchmarking. SNIPS is a publicly available dataset for Natural Language Understanding (NLU):
+```
+@article{coucke2018snips,
+  title={Snips voice platform: an embedded spoken language understanding system for private-by-design voice interfaces},
+  author={Coucke, Alice and Saade, Alaa and Ball, Adrien and Bluche, Th{\'e}odore and Caulier, Alexandre and Leroy, David and Doumouro, Cl{\'e}ment and Gisselbrecht, Thibault and Caltagirone, Francesco and Lavril, Thibaut and others},
+  journal={arXiv preprint arXiv:1805.10190},
+  year={2018}
+}
+```
+
+
