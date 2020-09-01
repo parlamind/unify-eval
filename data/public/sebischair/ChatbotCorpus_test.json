@@ -1,0 +1,426 @@
+[
+  {
+    "clause": "i want to go marienplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next train in muncher freiheit?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "when does the next u-bahn leaves from garching forschungszentrum?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "from olympia einkaufszentrum to hauptbahnhof",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next train from winterstra\u00dfe 12 to kieferngarten",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next rocket from winterstra\u00dfe 12 to kieferngarte",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "can you find a connection from garching to hauptbahnhof?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how to get from untere strass\u00e4cker 21 to fr\u00f6ttmaning",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how i can get from marienplatz to garching",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "connection from boltzmannstra\u00dfe to kieferngarten",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how to get from bonner platz to freimann?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next s-bahn leaving at garching?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "how do i get from oez to hbf?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how to get from winterstrasse 12 to fr\u00f6ttmaning",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how do i get from garching forschungszentrum to pasing",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "theresienstra\u00dfe to assling",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from theresienstra\u00dfe to munich east?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when does the next bus starts from garching?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "from quiddestra\u00dfe to garching?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "can you find a connection from kurt-eisner-stra\u00dfe to garching forschungszentrum?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "can you find a connection from quiddestra\u00dfe to garching forschungszentrum?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when does the next train leaves at garching?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "from hauptbahnhof to garching?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get to glockenbachviertel from garching forschungszentrum?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how i can get from garching to nordfriedhof",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get to glockenbachviertel from garching forschungszentrum?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next train leaving in garching forschungszentrum",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "how can i get from moosach to quiddestra\u00dfe?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from moosach to poccistra\u00dfe?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from kurt-eisner-stra\u00dfe to garching forschungszentrum?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from moosach to quiddestra\u00dfe?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from moosach to odeonsplatz?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when does the next bus starts at garching?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "what's the shortest way from quiddestra\u00dfe to odeonsplatz?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next bus from ostbahnhof",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "how i can get from garching to neuperlach sued",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next train in munchner freiheit?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "how i can get from marienplatz to garching?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how do i get from poccistra\u00dfe to laim",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "i want to go garching from marienplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how i can get from marienplatz to garching?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from hauptbahnhof to odeonsplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "prinzregentenplatz to rotkreuzplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "i want to go to garching from marienplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "next train from garching",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "from prinzregentenplatz to rotkreuzplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next subway from garching forschungszentrum",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "from garching to klinikum",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "from garching foschungszentrum to odeonsplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "next bus in garching",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "when does the train leaving in garching forschungszentrum",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "next subway from garching forschungszentrum",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "tell me the next bus from garching",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "next bus from garching, please.",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "next bus from garching",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "next bus from central station",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "from garching to marienplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "next bus from garching.",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "connection from garching to hauptbahnhof?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when does the next bus departs from garching?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "find connection from hauptbahnhof to odeonsplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when does the next u-bahn departs at garching forschungszentrum?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "when does the next u-bahn departs at garching?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "when does the next subway departs at garching",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "when is the next train in garching?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "how to get from m\u00fcnchner freiheit to garching ?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "implerstra\u00dfe to ostbahnhof",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from hauptbahnhof to odeonsplatz?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i go from garching forschungszentrum to prinzregentenplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from mangfallplatz to garching",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get to hohenlindenerstra\u00dfe",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "harthaus to hackerbr\u00fccke",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from feldmoching to garching forschungszentrum?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "from marienplatz to petershausen",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the train from garching to marienplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "neufahrn to garching",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from mangfallplatz to garching",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get to hohenlindenerstr",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next bus from garching forschungzentrum",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "how do i get from spitzingplatz to poccistra\u00dfe?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from garching forschungszentrum to marienplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from klinkum to marienplatz?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how to get from alte heide to marienplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "next train from muenchen freicheit",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "depart in garching, i assume",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "when does the next u-bahn depart at garching?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "the next bus from garching forschungzentrum",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "when is the next train in alte heide?",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "or depart from garching",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "hello munich city bot! how do i get from m\u00fcnchner freiheit to scheidplatz?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from garching forschungszentrum to prinzregentenplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from neufahrn to garching",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "take me to the airport",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when does the next u6 leave from garching forschungszentrum",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "how i can get from munchner freiheit to nordfriedhof?",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "from harthaus to hackerbr\u00fccke",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the train from garching",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "what is the next train from m\u00fcnchner freiheit",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "how can i get from theresienstrasse to garching forschungszentrum",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from m\u00fcnchner freiheit to odeonsplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "from garching to hauptbahnhof",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from garching to odeonsplatz",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "start: neufahrn end:garching",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "how can i get from studentenstadt to garching",
+    "label": "FindConnection"
+  },
+  {
+    "clause": "when is the next bus from garching",
+    "label": "DepartureTime"
+  },
+  {
+    "clause": "take me from hauptbahnhof to odeonsplatz",
+    "label": "FindConnection"
+  }
+]
