@@ -13,9 +13,8 @@ from unify_eval.utils.text_sequence import SequenceMapper, Tokenizer
 from unify_eval.model.mixins.classification import Classifier
 
 """
-EXAMPLE FOR SOME DEEP MODEL 
-REALLY JUST USED FOR PROTOTYPING THE WHOLE API
-
+the classes here provide reference implementations for the transformer model
+as well as self-attention based classifiers in general
 """
 
 
@@ -27,14 +26,17 @@ def sliding(l, slide_size: int, step_size=1):
 
 
 class MLP(t.nn.Module):
+    """
+    A simple feedforward layer or a stack of multiple ones
+    """
 
-    def __init__(self, layer_sizes: List[int], activation: Callable = t.nn.ELU):
+    def __init__(self, layer_sizes: List[int], activation: Callable = t.nn.ReLU, dropout: float = 0.1):
         super(MLP, self).__init__()
         self.activation = activation()
         self.layer_sizes = layer_sizes
         self.layers = t.nn.ModuleList([t.nn.Linear(in_features=n_in, out_features=n_out)
                                        for (n_in, n_out) in sliding(layer_sizes, slide_size=2, step_size=1)])
-        self.dropouts = t.nn.ModuleList([t.nn.Dropout(p=0.1) for l in layer_sizes[:-1]])
+        self.dropouts = t.nn.ModuleList([t.nn.Dropout(p=dropout) for l in layer_sizes[:-1]])
 
     def forward(self, x):
         for layer, dropout in zip(self.layers[:-1], self.dropouts):
@@ -42,7 +44,51 @@ class MLP(t.nn.Module):
         return self.layers[-1](x)
 
 
+class PytorchMultiheadAttention(t.nn.Module):
+    """uses Pytorch's implementation of multihead attention"""
+    def __init__(self, embed_dim, num_heads, dropout):
+        super().__init__()
+        self.num_heads = num_heads
+        self.multihead_attn = t.nn.MultiheadAttention(embed_dim, num_heads, dropout=dropout, bias=False)
+
+    def reconstruct_mask(self, attn_mask):
+        """
+        if attention mask is a simple vector of form [1 1 .... 0 0] where 0 means "do not attend to this position"
+        then we need to construct a boolean tensor out of it, because that's what Pytorch's implementation expects.
+        True means a position is masked (not attended to)
+        :param attn_mask: a vector of ones and zeros (zero = do not attend)
+        :return: a boolean tensor (True = do not attend)
+        """
+        attention_mask_bool = attn_mask == 0
+        attention_mask_mod = attention_mask_bool.repeat(self.num_heads, 1)
+        attention_mask_mod = attention_mask_mod.bool().unsqueeze(1)
+        attention_mask_mod = attention_mask_mod.repeat(1, attention_mask_mod.shape[-1], 1)
+        return attention_mask_mod
+
+    def forward(self, x, attn_mask, reconstruct_mask=False):
+        if reconstruct_mask:
+            attn_mask = self.reconstruct_mask(attn_mask)
+        x_permuted = x.permute(1, 0, 2)
+        attn_output, _ = self.multihead_attn(x_permuted, x_permuted, x_permuted, attn_mask=attn_mask)
+        attn_output_permuted = attn_output.permute(1, 0, 2)
+        return attn_output_permuted
+
+
+class PytorchMultiheadAttentionClassifier(t.nn.Module):
+    def __init__(self, embed_dim, num_heads, output_dim, activation, dropout):
+        super().__init__()
+        self.multihead_attn = PytorchMultiheadAttention(embed_dim, num_heads, dropout=0.0)
+        self.mlp = MLP(layer_sizes=[embed_dim, output_dim], activation=activation, dropout=dropout)
+
+    def forward(self, x, attn_mask, reconstruct_mask=False):
+        output = self.multihead_attn(x, attn_mask, reconstruct_mask)
+        return self.mlp(output.mean(axis=-2))
+
+
 class RawSingleAttention(nn.Module):
+    """
+    A single-head attention layer
+    """
 
     def get_attention(self,
                       queries: t.Tensor,
@@ -50,12 +96,13 @@ class RawSingleAttention(nn.Module):
                       attention_mask: t.Tensor) -> t.Tensor:
         d_keys = t.tensor(keys.shape[-1], requires_grad=False).float()
         attention_logits = queries.matmul(keys.permute((0, 2, 1))) / t.sqrt(d_keys)
-        attention_logits_masked = t.where(attention_mask < -1.0, attention_mask, attention_logits)
-        if t.isnan(attention_logits_masked).any():
-            pass
-        attention = t.softmax(attention_logits_masked, dim=-1)
+        if attention_mask is not None:
+            attention_logits = t.where(attention_mask < -1.0, attention_mask, attention_logits)
+        device_index = keys.get_device()
+        device = "cpu" if device_index < 0 else "cuda:"+str(device_index)
+        attention = t.softmax(attention_logits, dim=-1)
         # if key is padding, corresponding attention will be nan, so turn those into zeros
-        final_attention = t.where(t.isnan(attention), t.tensor(0.0), attention)
+        final_attention = t.where(t.isnan(attention), t.tensor(0.0).to(device), attention)
         return final_attention
 
     def forward(self,
@@ -68,6 +115,8 @@ class RawSingleAttention(nn.Module):
         :param queries: [bach_size,n_queries,query_dim]
         :param keys: [bach_size,n_keys,query_dim]
         :param values: [bach_size,n_keys,value_dim]
+        :param attention_mask: [bach_size,n_queries,n_keys], big negative integers
+                            correspond to slots to exclude from the softmax computation
         :return: attended values [batch_size,n_queries,value_dim]
         """
 
@@ -75,6 +124,11 @@ class RawSingleAttention(nn.Module):
 
 
 class ProjectedSingleAttention(nn.Module):
+    """
+    A single-head attention layer where queries, values and keys
+    are linearly projected prior to computing the attention
+    """
+
     def __init__(self, dim_model: int, dim_queries: int, dim_keys: int, dim_values: int):
         super().__init__()
         self.dim_model = dim_model
@@ -106,6 +160,12 @@ class ProjectedSingleAttention(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
+    """
+    A multi-head attention layer where queries, values and keys
+    are linearly projected in each head prior to computing the attention
+    the output of all heads is concatenated in the result
+    """
+
     def __init__(self, n_heads: int, dim_model: int, dim_queries: int, dim_keys: int, dim_values: int):
         super().__init__()
         self.heads: nn.ModuleList = \
@@ -135,13 +195,22 @@ class MultiHeadAttention(nn.Module):
 
 
 class TransformerSublayer(nn.Module):
+    """
+    A single encoder layer with:
+    1. multi-head attention
+    2. add & norm layer
+    3. feedforward + dropout layer
+    4. add & norm layer
+    """
+
     def __init__(self,
                  n_heads: int,
                  dim_model: int,
                  dim_queries: int,
                  dim_keys: int,
                  dim_values: int,
-                 ff_hidden_dims: List[int]):
+                 ff_hidden_dims: List[int],
+                 dropout: float = 0.1):
         super().__init__()
         self.dim_model = dim_model
         self.multihead_attention: MultiHeadAttention = MultiHeadAttention(n_heads=n_heads,
@@ -149,7 +218,8 @@ class TransformerSublayer(nn.Module):
                                                                           dim_queries=dim_queries,
                                                                           dim_keys=dim_keys,
                                                                           dim_values=dim_values)
-        self.ff = MLP(layer_sizes=[self.dim_model] + ff_hidden_dims + [self.dim_model])
+        self.ff = MLP(layer_sizes=[self.dim_model] + ff_hidden_dims + [self.dim_model],
+                      activation=t.nn.ReLU, dropout=dropout)
         self.dropout = t.nn.Dropout(p=0.1)
         self.lnorm0 = nn.LayerNorm(self.dim_model)
         self.lnorm1 = nn.LayerNorm(self.dim_model)
@@ -169,6 +239,10 @@ class TransformerSublayer(nn.Module):
 
 
 class SelfAttentionLayer(nn.Module):
+    """
+    A stack of N encoder layers using self-attention
+    """
+
     def __init__(self,
                  n_encoder_units: int,
                  n_heads: int,
@@ -176,18 +250,36 @@ class SelfAttentionLayer(nn.Module):
                  dim_queries: int,
                  dim_keys: int,
                  dim_values: int,
-                 ff_hidden_dims: List[int]):
+                 ff_hidden_dims: List[int],
+                 dropout: float = 0.1):
         super().__init__()
         self.sublayers = nn.ModuleList([TransformerSublayer(n_heads=n_heads,
                                                             dim_model=dim_model,
                                                             dim_queries=dim_queries,
                                                             dim_keys=dim_keys,
                                                             dim_values=dim_values,
-                                                            ff_hidden_dims=ff_hidden_dims) for _ in
+                                                            ff_hidden_dims=ff_hidden_dims,
+                                                            dropout=dropout) for _ in
                                         range(n_encoder_units)])
 
-    def forward(self, queries: t.Tensor, attention_mask: t.Tensor) -> t.Tensor:
+    def reconstruct_mask(self, attention_mask):
+        """
+        if attention mask is a simple vector of form [1 1 .... 0 0] where 0 means "do not attend to this position"
+        then we need to construct a tensor of floats out of it, as that's what our reference implementation expects.
+        In the resturned tensor, negative infinity corresponds to positions that get masked (not attended to)
+        and zero corresponds to positions that do not get masked.
+        :param attn_mask: a vector of ones and zeros (zero = do not attend)
+        :return: a floar tensor
+        """
+        attention_mask_mod = attention_mask.float().unsqueeze(1)
+        attention_mask_mod[attention_mask_mod == 0] = float("-inf")
+        attention_mask_mod = attention_mask_mod.repeat(1, attention_mask_mod.shape[-1], 1)
+        return attention_mask_mod
+
+    def forward(self, queries: t.Tensor, attention_mask: t.Tensor, reconstruct_mask: bool = False) -> t.Tensor:
         queries, keys, values = queries, queries, queries
+        if reconstruct_mask:
+            attention_mask = self.reconstruct_mask(attention_mask)
         for i_layer, layer in enumerate(self.sublayers):
             out = layer.forward(queries=queries,
                                 keys=keys,
@@ -198,33 +290,48 @@ class SelfAttentionLayer(nn.Module):
 
 
 class SelfAttentionClassifier(nn.Module):
+    """
+    Ad-hoc classifier built on top of a stack of N encdder layers with
+    self-attention. The classifier (decoder) is simply a stack of feedforward layers
+    """
+
     def __init__(self,
                  dim_model: int,
                  n_output_units: int,
                  n_encoder_units: int = 1,
                  n_heads: int = 12,
                  transformer_ff_hidden_dims: List[int] = None,
-                 activation: Callable = t.nn.ReLU) -> None:
+                 activation: Callable = t.nn.ReLU,
+                 dropout: float = 0.1,
+                 skip_connect: bool = False) -> None:
         super().__init__()
+        self.skip_connect = skip_connect
         if n_encoder_units < 1:
             n_encoder_units = 1
         # common heuristics to set the dimensionality of queries and feed-forward layers
         dim_queries = int(dim_model / n_heads)
         if transformer_ff_hidden_dims is None:
-            transformer_ff_hidden_dims = [dim_model*4]
+            transformer_ff_hidden_dims = [dim_model * 4]
         self.self_attention_layer = SelfAttentionLayer(n_encoder_units, n_heads, dim_model, dim_queries,
-                                                       dim_queries, dim_queries, transformer_ff_hidden_dims)
-        self.intermediate_dropout = t.nn.Dropout(p=0.1)
-        self.clf = MLP([dim_model, n_output_units], activation)
+                                                       dim_queries, dim_queries, transformer_ff_hidden_dims, dropout)
+        self.clf = MLP([dim_model, n_output_units], activation, dropout)
 
-    def forward(self, queries: t.Tensor, attention_mask: t.Tensor) -> t.Tensor:
-        embedded = self.self_attention_layer(queries, attention_mask)
+    def forward(self, queries: t.Tensor, attention_mask: t.Tensor = None, reconstruct_mask: bool = False) -> t.Tensor:
+        embedded = self.self_attention_layer(queries, attention_mask, reconstruct_mask)
         embedded = embedded.mean(axis=-2)
-        dropout_output = self.intermediate_dropout(embedded)
-        return self.clf(dropout_output)
+        if self.skip_connect:
+            avg_embeddings = queries.mean(axis=-2)
+            embedded = embedded + avg_embeddings
+        return self.clf(embedded)
 
 
 class TransformerClassifier(nn.Module):
+    """
+    A classifier built on top of a stack of N encdder layers with
+    self-attention. Words get embedded using an embedding layer + positional encoding.
+    The classifier (decoder) is simply a stack of feedforward layers
+    """
+
     def __init__(self,
                  n_encoder_units: int,
                  n_heads: int,
@@ -281,8 +388,7 @@ class TransformerClassifier(nn.Module):
 
 class TransformerModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
     """
-    Model used to prototype the whole api.
-    Transformer with final mlp as softmax classifier
+    A reference implementation of the transformer model
     """
 
     def __init__(self,
@@ -360,7 +466,7 @@ class TransformerModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
             "label_mapper": self.label_mapper}
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:
-        return dict((name, p.detach().cpu().numpy())
+        return dict((name, p.detach().numpy())
                     for name, p in self.transformer_classifier.named_parameters())
 
     def embed(self, **kwargs) -> np.ndarray:
@@ -376,10 +482,8 @@ class TransformerModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
 
         gradients = self.get_gradients(tensor=loss, with_respect_to=embeddings)
         self.transformer_classifier.zero_grad()
-        saliency = -t.einsum("abc,acd -> ad", gradients, embeddings.permute((0, 2, 1)))\
-            .detach()\
-            .cpu()\
-            .numpy()
+        saliency = -t.einsum("abc,acd -> ad", list(gradients), list(embeddings.permute((0, 2, 1)))).detach()\
+            .cpu().numpy()
         return saliency
 
     def get_loss_from_embeddings(self, embeddings: t.Tensor, **kwargs) -> Dict[str, t.Tensor]:
@@ -403,5 +507,3 @@ class TransformerModel(PytorchSaliencyModel, EmbeddingModel, Classifier):
         super().to_device(name)
         self.transformer_classifier.to(name)
         return self
-
-

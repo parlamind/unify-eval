@@ -52,7 +52,7 @@ class ScheduleCallback(TrainerCallback):
 class TensorboardCallback(TrainerCallback, ABC):
     def __init__(self,
                  folder_path: str,
-                 relative_path: str):
+                 relative_path: str =""):
         self.folder_path = folder_path
         self.relative_path = relative_path
         self.writer = None
@@ -151,7 +151,7 @@ class PlotParameters(TensorboardCallback):
     Callback plotting histograms of all model parameters via tensorboard
     """
 
-    def __init__(self, folder_path: str, relative_path: str):
+    def __init__(self, folder_path: str, relative_path: str = ""):
         """
         :param folder_path: path to folder containing all the tensorboard logs
         """
@@ -176,7 +176,7 @@ class PlotClassificationEmbeddings(TensorboardCallback):
 
     def __init__(self, folder_path: str,
                  data_loader: KeyedBatchLoader,
-                 relative_path: str,
+                 relative_path: str = "",
                  minibatch_size: int = 512,
                  label_kw: str = "labels", progress_bar: bool = True):
         """
@@ -251,7 +251,7 @@ class EvaluationCallBack(TensorboardCallback):
                  data_loader: Union[KeyedBatchLoader, KeyedSubsampledBatchLoader],
                  monitoring_metrics: List[MonitoringMetric],
                  evaluation_metrics: Dict[str, EvaluationMetric],
-                 relative_path: str,
+                 relative_path: str = "",
                  minibatch_size: int = 512,
                  label_kw: str = "labels",
                  progress_bar: bool = True,
@@ -346,9 +346,9 @@ class EvaluationCallBack(TensorboardCallback):
 
     @staticmethod
     def default(folder_path: str,
-                relative_path: str,
                 data_loader: Union[KeyedBatchLoader, KeyedSubsampledBatchLoader],
                 label_indices: Union[List[int], np.ndarray],
+                relative_path: str = "",
                 minibatch_size: int = 265,
                 junk_threshold: float = None,
                 junk_label_index: int = None,
@@ -384,10 +384,10 @@ class MessageLevelEvaluationCallBack(TensorboardCallback):
 
     def __init__(self,
                  folder_path: str,
-                 relative_path: str,
                  data_loader: Union[KeyedBatchLoader, KeyedSubsampledBatchLoader],
                  monitoring_metrics: List[MonitoringMetric],
                  evaluation_metrics: Dict[str, EvaluationMetric],
+                 relative_path: str = "",
                  minibatch_size: int = 512,
                  label_kw: str = "labels",
                  progress_bar: bool = True,
@@ -484,9 +484,9 @@ class MessageLevelEvaluationCallBack(TensorboardCallback):
 
     @staticmethod
     def default(folder_path: str,
-                relative_path: str,
                 data_loader: Union[KeyedBatchLoader, KeyedSubsampledBatchLoader],
                 label_indices: Union[List[int], np.ndarray],
+                relative_path: str = "",
                 minibatch_size: int = 265,
                 junk_threshold: float = None,
                 junk_label_index: int = None,
@@ -530,7 +530,7 @@ class PlottingCallback(TensorboardCallback):
     Subclass that registers a tensorboard summary writer
     """
 
-    def __init__(self, folder_path: str, relative_path: str):
+    def __init__(self, folder_path: str, relative_path: str = ""):
         super().__init__(folder_path, relative_path)
 
     def _current_plot_to_image(self):
@@ -556,10 +556,10 @@ class ConfusionMatrixCallback(PlottingCallback):
     """
 
     def __init__(self, folder_path: str,
-                 relative_path: str,
                  data_loader: KeyedBatchLoader,
                  label_array: np.array,
                  label_kw: str = "labels",
+                 relative_path: str = "",
                  minibatch_size: int = 256,
                  junk_threshold: float = None,
                  junk_label_index: int = None,
@@ -678,6 +678,7 @@ class TestForMinimalPairs(PlottingCallback):
                  folder_path: str,
                  category_name: str,
                  data_loaders_per_label: Dict[Label, KeyedBatchLoader],
+                 relative_path: str = "",
                  text_kw: str = "texts",
                  label_kw: str = "labels",
                  opposing_label: str = "-1",
@@ -685,6 +686,7 @@ class TestForMinimalPairs(PlottingCallback):
                  progress_bar: bool = True):
         """
         :param folder_path: path to folder where tensorboard checkpoints are stored
+        :param folder_path: relative path from folder to checkpoint files
         :param category_name: category of minimal pairs, e.g. negation, tense, ...
         :param data_loaders_per_label: dictionary from labels to corresponding data loader
         :param text_kw: keyword in data loader for input text (used for plotting)
@@ -693,7 +695,7 @@ class TestForMinimalPairs(PlottingCallback):
         :param minibatch_size: minibatch size during inference of label probability
         :param progress_bar: if true, print tqdm progress bar during inference
         """
-        super().__init__(folder_path)
+        super().__init__(folder_path,relative_path)
         self.folder_path = folder_path
         self.category_name = category_name
         self.data_loaders_per_label = data_loaders_per_label
@@ -948,8 +950,8 @@ class LabelSpecificEvaluation(PlottingCallback):
 
     def __init__(self,
                  folder_path: str,
-                 relative_path: str,
                  data_loader: KeyedBatchLoader,
+                 relative_path: str = "",
                  label_kw: str = "labels",
                  minibatch_size=256,
                  progress_bar: bool = True,
@@ -1035,8 +1037,8 @@ class MessageLevelLabelSpecificEvaluation(PlottingCallback):
 
     def __init__(self,
                  folder_path: str,
-                 relative_path: str,
                  data_loader: KeyedBatchLoader,
+                 relative_path: str = "",
                  label_kw: str = "labels",
                  minibatch_size=256,
                  progress_bar: bool = True):
