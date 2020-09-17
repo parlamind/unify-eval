@@ -6,6 +6,7 @@ import torch as t
 from torch.distributions import Categorical
 from torch.nn import CrossEntropyLoss
 
+from unify_eval.utils.vocab import PAD
 from unify_eval.model.mixins.stateful import StatefulModel
 from unify_eval.model.types import Tensor
 from unify_eval.training.seq2seq.seq2seq_data import Seq2SeqData
@@ -21,7 +22,7 @@ class Sequence2SequenceModel(StatefulModel):
         StatefulModel.__init__(self)
         self.sequence_mapper = sequence_mapper
         self.tokenizer = tokenizer
-        self.xent = CrossEntropyLoss(ignore_index=self.sequence_mapper.vocab.stoi["xxpad"])
+        self.xent = CrossEntropyLoss(ignore_index=self.sequence_mapper.vocab.token2id[PAD])
 
     @abc.abstractmethod
     def train(self, data: Seq2SeqData, **kwargs) -> "Sequence2SequenceModel":
@@ -165,7 +166,7 @@ class LanguageModel(Sequence2SequenceModel):
                                                    temperature=temperature,
                                                    **kwargs)
 
-        return self.sequence_mapper.decode_texts(indices=[token_indices + generated_indices],
+        return self.sequence_mapper.decode_texts(encoded_texts=[token_indices + generated_indices],
                                                  delimiter=self.tokenizer.delimiter)[0]
 
     @abc.abstractmethod

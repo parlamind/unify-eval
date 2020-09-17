@@ -272,7 +272,6 @@ class EvaluationCallBack(TensorboardCallback):
         if not os.path.exists(folder_path):
             print(f"writing folder for evaluation callback {folder_path}")
             os.makedirs(folder_path)
-        self.folder_path = folder_path
         self.data_loader = data_loader
         self.monitoring_metrics = monitoring_metrics
         self.evaluation_metrics = evaluation_metrics
@@ -336,8 +335,9 @@ class EvaluationCallBack(TensorboardCallback):
             self.writer.add_scalar(tag=name, scalar_value=value, global_step=self.global_step)
 
         # add all to evaluation_results.json
+        dump_folder = self.folder_path if not self.relative_path else self.folder_path + "/" + self.relative_path
         self.data_collector.add_data(**evaluation_results).to_json(
-            path=os.path.join(self.folder_path, "evaluation_results.json"))
+            path=os.path.join(dump_folder, "evaluation_results.json"))
 
         # reset data loader (duh)
         self.data_loader.reset()
@@ -408,7 +408,6 @@ class MessageLevelEvaluationCallBack(TensorboardCallback):
         if not os.path.exists(folder_path):
             print(f"writing folder for evaluation callback {folder_path}")
             os.makedirs(folder_path)
-        self.folder_path = folder_path
         self.data_loader = data_loader
         self.monitoring_metrics = monitoring_metrics
         self.evaluation_metrics = evaluation_metrics
@@ -474,8 +473,9 @@ class MessageLevelEvaluationCallBack(TensorboardCallback):
             self.writer.add_scalar(tag=name, scalar_value=value, global_step=self.global_step)
 
         # add all to evaluation_results.json
+        dump_folder = self.folder_path if not self.relative_path else self.folder_path+"/"+self.relative_path
         self.data_collector.add_data(**evaluation_results).to_json(
-            path=os.path.join(self.folder_path, "evaluation_results.json"))
+            path=os.path.join(dump_folder, "evaluation_results.json"))
 
         # reset data loader (duh)
         self.data_loader.reset()

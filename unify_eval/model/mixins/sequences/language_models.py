@@ -1,11 +1,10 @@
-from typing import List, Tuple, Dict, Iterator
+from typing import List, Tuple, Dict
 
 import torch as t
-from fastai.text import transform, PAD
 from torch.nn import CrossEntropyLoss
 
-from unify_eval.model.deep_model import DeepModel
 from unify_eval.model.layers.layer_base import Layer
+from unify_eval.utils.vocab import PAD
 from unify_eval.model.layers.preprocessing import SequenceMapperLayer, TokenizerLayer
 from unify_eval.model.mixins.sequences.seq2seq import PytorchLanguageModel
 from unify_eval.model.mixins.stateful import StatefulLayeredModel
@@ -27,14 +26,15 @@ class LayeredLanguageModel(StatefulLayeredModel, PytorchLanguageModel):
         """
         StatefulLayeredModel.__init__(self, sub_layers)
         PytorchLanguageModel.__init__(self,
-                                      tokenizer=self.preprocessing.tokenizer,
-                                      sequence_mapper=self.preprocessing.sequence_mapper)
+                                      tokenizer=sub_layers[0][1]["tokenizer"],
+                                      sequence_mapper=sub_layers[0][1]["sequence_mapper"])
         self.tail = self[1:]
         optimizer_factory = optimizer_factory if optimizer_factory is not None else lambda params: t.optim.Adam(lr=1e-4,
                                                                                                                 params=params)
         self.optimizer = optimizer_factory(params=list(self.get_optimizable_parameters()))
+        self.vocab = sub_layers[0][1]["sequence_mapper"].get_components()["vocab"]
         self.xent = CrossEntropyLoss(
-            ignore_index=self.preprocessing.sequence_mapper.vocab.stoi[transform.PAD])
+            ignore_index=self.vocab.token2id[PAD])
 
     @classmethod
     def from_layers(cls,
@@ -57,11 +57,11 @@ class LayeredLanguageModel(StatefulLayeredModel, PytorchLanguageModel):
     def get_loss(self, input_indices: List[List[int]], target_indices: List[List[int]], **kwargs) -> Dict[str, Tensor]:
         # indices are already preprocessed, so push only through tail of model
         logits = self.tail.push(encoded_texts=input_indices,
-                                padding_value=self.preprocessing.sequence_mapper.vocab.stoi[PAD],
+                                padding_value=self.vocab.token2id[PAD],
                                 **kwargs)["logits"]
         padded_target = t.nn.utils.rnn.pad_sequence(
             sequences=[t.tensor(indices_).long() for indices_ in target_indices],
-            padding_value=self.sequence_mapper.vocab.stoi[PAD])
+            padding_value=self.vocab.token2id[PAD])
         l = self.xent(input=logits.view(-1, logits.shape[-1]), target=padded_target.view(-1, ))
         return {"xent": l}
 
@@ -76,7 +76,7 @@ class LayeredLanguageModel(StatefulLayeredModel, PytorchLanguageModel):
     def predict_target_logits(self, indices: List[List[int]]) -> Tensor:
         # indices are already preprocessed, so push only through tail of model
         return self.tail.push(encoded_texts=indices,
-                              padding_value=self.sequence_mapper.vocab.stoi["xxpad"])["logits"]
+                              padding_value=self.vocab.token2id[PAD])["logits"]
 
     def _get_cross_entropy_singlebatch(self, input_indices: List[List[int]], target_indices: List[List[int]],
                                        batch_first: bool = False, **kwargs) -> Tensor:

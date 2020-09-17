@@ -30,7 +30,7 @@ class MessageLevelEvaluation(PlottingCallback):
     def __init__(self,
                  folder_path: str,
                  relative_path: str,
-                 data_loder: KeyedBatchLoader,
+                 data_loader: KeyedBatchLoader,
                  junk_label: Label = None,
                  junk_threshold: float = None,
                  labels_to_evaluate: Set[int] = None,
@@ -39,7 +39,7 @@ class MessageLevelEvaluation(PlottingCallback):
         super().__init__(folder_path,relative_path)
         self.junk_label = junk_label
         self.junk_threshold = junk_threshold
-        self.data_loader = data_loder
+        self.data_loader = data_loader
         self.labels_to_evaluate = labels_to_evaluate
         self.minibatch_size = minibatch_size
         self.text_kw = text_kw
@@ -107,7 +107,7 @@ class MessageLevelEvaluation(PlottingCallback):
 class MessageLevelIsolatedEvaluation(PlottingCallback):
     def __init__(self,
                  folder_path: str,
-                 data_loder: KeyedBatchLoader,
+                 data_loader: KeyedBatchLoader,
                  junk_label: Label = None,
                  junk_threshold: float = None,
                  labels_to_evaluate: Set[int] = None):
@@ -115,7 +115,7 @@ class MessageLevelIsolatedEvaluation(PlottingCallback):
         self._writer = SummaryWriter(logdir=folder_path)
         self.junk_label = junk_label
         self.junk_threshold = junk_threshold
-        self.data_loader = data_loder
+        self.data_loader = data_loader
         self.labels_to_evaluate = labels_to_evaluate
 
     def __call__(self, model: MessageLevelClassifier, i_minibatch: int, iteration: int, *args, **kwargs):
@@ -161,7 +161,7 @@ class MessageLevelIsolatedEvaluation(PlottingCallback):
 class SaveWrongMessagePredictions(PlottingCallback):
     def __init__(self,
                  folder_path: str,
-                 data_loder: KeyedBatchLoader,
+                 data_loader: KeyedBatchLoader,
                  junk_label: Label = None,
                  junk_threshold: float = None,
                  labels_to_evaluate: Set[int] = None,
@@ -170,7 +170,7 @@ class SaveWrongMessagePredictions(PlottingCallback):
         self._writer = SummaryWriter(logdir=folder_path)
         self.junk_label = junk_label
         self.junk_threshold = junk_threshold
-        self.data_loader = data_loder
+        self.data_loader = data_loader
         self.labels_to_evaluate = labels_to_evaluate
         self.text_kw = text_kw
 
