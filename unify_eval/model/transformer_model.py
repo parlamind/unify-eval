@@ -125,7 +125,7 @@ class TransformerClassificationModel(Classifier):
         return {
             "transformer_classifier": self.transformer_classifier,
             "tokenizer": self.tokenizer,
-
+            "label_mapper": self.label_mapper
         }
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:

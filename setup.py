@@ -122,7 +122,7 @@ setup(
     name='unify-eval',
     packages=find_packages(include=['unify_eval', "unify_eval.*"]),
     description='',
-    version='1.0.13',
+    version='1.0.14',
     url='https://github.com/parlamind/unify-eval',
     author='marlon.betz@parlamind.com, mohamed.balabel@parlamind.com',
     author_email=' marlon.betz@parlamind.com, mohamed.balabel@parlamind.com',
