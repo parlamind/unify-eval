@@ -98,7 +98,7 @@ install_requires = [
 	"tensorboard==2.2.2",
 	"tensorboard-plugin-wit==1.7.0",
 	"tensorboardX==2.1",
-	"tensorflow==2.2.0",
+	"tensorflow==2.4.0",
 	"tensorflow-estimator==2.2.0",
 	"termcolor==1.1.0",
 	"thinc==7.4.1",
