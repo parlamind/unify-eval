@@ -5,7 +5,7 @@ install_requires = [
 	"astor==0.8.1",
 	"astunparse==1.6.3",
 	"beautifulsoup4==4.9.1",
-	"bleach==3.1.5",
+	"bleach==3.3.0",
 	"blis==0.4.1",
 	"boto==2.49.0",
 	"boto3==1.14.20",
