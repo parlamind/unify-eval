@@ -20,7 +20,7 @@ install_requires = [
 	"cleantext==1.1.3",
 	"click==7.1.2",
 	"colorama==0.4.3",
-	"cryptography==3.1",
+	"cryptography==3.3.2",
 	"cycler==0.10.0",
 	"cymem==2.0.3",
 	"dialogflow==1.0.0",
