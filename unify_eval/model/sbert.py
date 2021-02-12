@@ -49,7 +49,9 @@ class SbertClassificationModel(Classifier):
         return F.softmax(self.get_logits(**kwargs), dim=-1).detach().cpu().numpy()
 
     def get_logits(self, **kwargs) -> Tensor:
-        return self.sbert_classifier.forward(kwargs["clauses"])
+        texts = [t.split(" ")[:self.max_len] for t in kwargs["clauses"]]
+        texts = [" ".join(t) for t in texts]
+        return self.sbert_classifier.forward(texts)
 
     def train(self, **kwargs) -> "SbertClassificationModel":
         loss = self.get_loss(as_tensor=True, **kwargs)["cross_entropy"]
