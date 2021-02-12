@@ -54,7 +54,7 @@ def get_model(corpus, technique, lang, architecture, num_layers, activation, lr,
 
 
 def get_sbert(corpus, lang, clf, device, lr, weight_decay):
-    pretrained_model_name = "bparaphrase-xlm-r-multilingual-v1" if lang == "de" else "paraphrase-distilroberta-base-v1"
+    pretrained_model_name = "paraphrase-xlm-r-multilingual-v1" if lang == "de" else "paraphrase-distilroberta-base-v1"
     model = SbertClassificationModel(label_mapper=corpus.label_mapper,
                                      sbert_classifier=SbertClassifier(
                                         pretrained_model_name=pretrained_model_name,
