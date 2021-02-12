@@ -1,9 +1,10 @@
 from transformers import BertTokenizer, BertModel, DistilBertTokenizer, DistilBertModel, \
     GPT2Model, GPT2Tokenizer, RobertaModel, RobertaTokenizer
-
+from sentence_transformers import SentenceTransformer
 from unify_eval.model.transformer_clf import MLP, SelfAttentionClassifier
 from unify_eval.model.rnn_clf import RecurrentClassifier
 from unify_eval.model.transformer_model import *
+from unify_eval.model.sbert import SbertClassifier, SbertClassificationModel
 
 
 def get_model(corpus, technique, lang, architecture, num_layers, activation, lr, weight_decay, dropout, skip_connect, using_gpu):
@@ -45,8 +46,21 @@ def get_model(corpus, technique, lang, architecture, num_layers, activation, lr,
         model = get_gpt2(corpus, architecture, clf, device, lr, weight_decay)
     elif technique == "roberta":
         model = get_roberta(corpus, architecture, clf, device, lr, weight_decay)
+    elif technique == "sbert":
+        model = get_sbert(corpus, lang, clf, device, lr, weight_decay)
     else:
         model = None
+    return model
+
+
+def get_sbert(corpus, lang, clf, device, lr, weight_decay):
+    pretrained_model_name = "bparaphrase-xlm-r-multilingual-v1" if lang == "de" else "paraphrase-distilroberta-base-v1"
+    model = SbertClassificationModel(label_mapper=corpus.label_mapper,
+                                     sbert_classifier=SbertClassifier(
+                                        pretrained_model_name=pretrained_model_name,
+                                        clf=clf),
+                                     lr=lr,
+                                     weight_decay=weight_decay).to_device(device)
     return model
 
 

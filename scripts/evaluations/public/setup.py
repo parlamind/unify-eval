@@ -127,10 +127,10 @@ class DefaultSetup:
     def get_isolated_eval_callbacks(self):
         return [
             IsolatedEvaluation(folder_path=os.path.join(self.model_folder, "isolated_evaluation"),
-                               data_loder=self.get_isolated_data_loader(),
+                               data_loader=self.get_isolated_data_loader(),
                                labels_to_evaluate=self.train_corpus.label_mapper.labels),
             IsolatedEvaluation(folder_path=os.path.join(self.model_folder, "isolated_evaluation_85"),
-                               data_loder=self.get_isolated_data_loader(),
+                               data_loader=self.get_isolated_data_loader(),
                                labels_to_evaluate=self.train_corpus.label_mapper.labels,
                                junk_threshold=0.85)
         ]
