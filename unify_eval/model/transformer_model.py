@@ -66,6 +66,8 @@ class TransformerClassificationModel(Classifier):
         super().__init__(label_mapper)
         self.transformer_classifier = transformer_classifier
         self.tokenizer = tokenizer
+        self.lr = lr
+        self.weight_decay = weight_decay
         self._xent = CrossEntropyLoss()
         trainable_params = list(self.transformer_classifier.clf.parameters())
         if self.transformer_classifier.finetuning:
@@ -125,7 +127,9 @@ class TransformerClassificationModel(Classifier):
         return {
             "transformer_classifier": self.transformer_classifier,
             "tokenizer": self.tokenizer,
-            "label_mapper": self.label_mapper
+            "label_mapper": self.label_mapper,
+            "lr": self.lr,
+            "weight_decay": self.weight_decay
         }
 
     def get_numpy_parameters(self) -> Dict[str, np.ndarray]:
